@@ -6,7 +6,7 @@ import { ChatOpenAI } from 'langchain/chat_models'
 import { BaseChatModel } from 'langchain/chat_models'
 import { Effect, Layer, Match, pipe, Exit } from 'effect'
 import { CodeReview, CodeReviewClass, DetectLanguage, octokitTag, PullRequest, PullRequestClass } from './helpers.js'
-import { ChatAnthropic } from 'langchain/chat_models'
+import { ChatAnthropic } from 'langchain/chat_models/anthropic'
 
 config()
 let isBlockExecuted = false; // Flag to ensure the block runs only once
@@ -38,7 +38,7 @@ export const run = async (): Promise<void> => {
   const model: BaseChatModel = new ChatAnthropic({
     temperature,
     anthropicApiKey,
-    modelName,
+    modelName: "claude-3-sonnet-20240229"
   })
 
   const MainLive = init(model, githubToken)
