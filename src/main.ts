@@ -6,6 +6,7 @@ import { ChatOpenAI } from 'langchain/chat_models'
 import { BaseChatModel } from 'langchain/chat_models'
 import { Effect, Layer, Match, pipe, Exit } from 'effect'
 import { CodeReview, CodeReviewClass, DetectLanguage, octokitTag, PullRequest, PullRequestClass } from './helpers.js'
+import { ChatAnthropic } from 'langchain/chat_models'
 
 config()
 let isBlockExecuted = false; // Flag to ensure the block runs only once
@@ -16,6 +17,7 @@ export const run = async (): Promise<void> => {
   const githubToken = core.getInput('github_token')
   const modelName = core.getInput('model_name')
   const temperature = parseInt(core.getInput('model_temperature'))
+  const anthropicApiKey = core.getInput('anthropic_api_key')
 //   const azureOpenAIApiKey = core.getInput('azure_openai_api_key')
 //   const azureOpenAIApiInstanceName = core.getInput('azure_openai_api_instance_name')
 //   const azureOpenAIApiDeploymentName = core.getInput('azure_openai_api_deployment_name')
@@ -24,14 +26,19 @@ export const run = async (): Promise<void> => {
   const context = github.context
   const { owner, repo } = context.repo
 
-  const model: BaseChatModel = new ChatOpenAI({
+  // const model: BaseChatModel = new ChatOpenAI({
+  //   temperature,
+  //   openAIApiKey,
+  //   modelName,
+  //   // azureOpenAIApiKey,
+  //   // azureOpenAIApiInstanceName,
+  //   // azureOpenAIApiDeploymentName,
+  //   // azureOpenAIApiVersion
+  // })
+  const model: BaseChatModel = new ChatAnthropic({
     temperature,
-    openAIApiKey,
+    anthropicApiKey,
     modelName,
-    // azureOpenAIApiKey,
-    // azureOpenAIApiInstanceName,
-    // azureOpenAIApiDeploymentName,
-    // azureOpenAIApiVersion
   })
 
   const MainLive = init(model, githubToken)
