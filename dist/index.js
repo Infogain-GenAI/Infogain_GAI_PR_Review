@@ -49668,7 +49668,33 @@ class CodeReviewClass {
             llm: this.llm
         });
     }
-    codeReviewFor = (file) => DetectLanguage.pipe(esm_Effect/* flatMap */.VSD(DetectLanguage => DetectLanguage.detectLanguage(file.filename)), esm_Effect/* flatMap */.VSD(lang => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => this.chain.call({ lang, diff: file.patch })), exponentialBackoffWithJitter(3))));
+    //original
+    // codeReviewFor = (
+    //   file: PullRequestFile
+    // ): Effect.Effect<ChainValues, NoSuchElementException | UnknownException, DetectLanguage> =>
+    //   DetectLanguage.pipe(
+    //     Effect.flatMap(DetectLanguage => DetectLanguage.detectLanguage(file.filename)),
+    //     Effect.flatMap(lang =>
+    //       Effect.retry(
+    //         Effect.tryPromise(() => this.chain.call({ lang, diff: file.patch })),
+    //         exponentialBackoffWithJitter(3)
+    //       )
+    //     )
+    //   )
+    codeReviewFor = (file) => DetectLanguage.pipe(esm_Effect/* flatMap */.VSD(DetectLanguage => DetectLanguage.detectLanguage(file.filename)), esm_Effect/* flatMap */.VSD(lang => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(async () => {
+        try {
+            const result = await this.chain.call({
+                lang,
+                diff: file.patch,
+                stop: ["\n\nHuman:", "\n\nAssistant:"] // Add stop sequences
+            });
+            return result;
+        }
+        catch (error) {
+            core.error(`Error in code review: ${error}`);
+            throw error;
+        }
+    }), exponentialBackoffWithJitter(3))));
 }
 const exponentialBackoffWithJitter = (retries = 3) => recurs(retries).pipe(compose(exponential(1000, 2)), jittered);
 const RETRIES = 3;
