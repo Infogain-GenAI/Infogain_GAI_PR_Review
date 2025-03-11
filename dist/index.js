@@ -49635,7 +49635,7 @@ class PullRequestClass {
         }))), esm_Effect/* tap */.bwX(filteredFiles => esm_Effect/* sync */.Z_X(() => core.info(`Filtered files for review ${filteredFiles.length}: ${filteredFiles.map(_ => _.filename)}`))));
         return program;
     };
-    createReviewComment = (requestOptions) => octokitTag.pipe(esm_Effect/* tap */.bwX(_ => core.debug(`Creating review comment: ${requestOptions}`)), esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReviewComment(requestOptions)), exponentialBackoffWithJitter(3))));
+    createReviewComment = (requestOptions) => octokitTag.pipe(esm_Effect/* tap */.bwX(_ => core.debug(`Creating review comment: ${JSON.stringify(requestOptions)}`)), esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReviewComment(requestOptions)), exponentialBackoffWithJitter(3))));
     createReview = (requestOptions) => octokitTag.pipe(esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReview(requestOptions)), exponentialBackoffWithJitter(3))));
 }
 const LanguageDetection = esm_Effect/* sync */.Z_X(() => {
@@ -49665,7 +49665,8 @@ class CodeReviewClass {
         this.llm = llm;
         this.chain = new llm_chain.LLMChain({
             prompt: this.chatPrompt,
-            llm: this.llm
+            llm: this.llm,
+            verbose: true
         });
     }
     //original

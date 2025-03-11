@@ -82,7 +82,7 @@ export class PullRequestClass implements PullRequest {
     requestOptions: CreateReviewCommentRequest
   ): Effect.Effect<void, Error, InstanceType<typeof GitHub>> =>
     octokitTag.pipe(
-      Effect.tap(_ => core.debug(`Creating review comment: ${ requestOptions}`)),
+      Effect.tap(_ => core.debug(`Creating review comment: ${JSON.stringify(requestOptions)}`)),
       Effect.flatMap(octokit =>
         Effect.retry(
           Effect.tryPromise(() => octokit.rest.pulls.createReviewComment(requestOptions)),
@@ -155,7 +155,8 @@ export class CodeReviewClass implements CodeReview {
     this.llm = llm
     this.chain = new LLMChain({
       prompt: this.chatPrompt,
-      llm: this.llm
+      llm: this.llm,
+      verbose: true
     })
   }
 
