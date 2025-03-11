@@ -45872,18 +45872,7 @@ const extensionToLanguageMap = {
 };
 const systemPrompt = 'Act as an empathetic software engineer who is an expert in designing and developing React based frontend softwares based on Redux Middleware and Saga framework and adhering to best practices of software architecture.';
 const instructionsPrompt = `Your task is to review a Pull Request. You will receive a git diff.
-Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities. Check it adheres to the following coding standards and guidelines:
-1. Redux Setup
-2. Redux Middleware
-3. Saga Implementation
-4.Component Architecture
-5.State Management
-6.Code Organization and Structure
-7.Error Handling
-8.Performance Optimization
-9.Testing
-10.Documentation and Comments:
-
+Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities.
 Write your reply and examples in GitHub Markdown format.
 The programming language in the git diff is {lang}.
 
