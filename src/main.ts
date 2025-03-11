@@ -84,7 +84,15 @@ export const run = async (): Promise<void> => {
                           pull_number: context.payload.number,
                           commit_id: context.payload.pull_request?.head.sha,
                           path: file.filename,
-                          body: res.text,//comments.map((r: any) => r.text).join('\n'), // Consolidate comments//res.text,
+                          body: JSON.stringify({
+                            review_comment: res.text,
+                            metadata: {
+                              file: file.filename,
+                              commit: context.payload.pull_request?.head.sha,
+                              review_type: 'code_review'
+                            }
+                          }),
+                          //body: res.text,//comments.map((r: any) => r.text).join('\n'), // Consolidate comments//res.text,
                           subject_type: 'file'
                         })
                       )
