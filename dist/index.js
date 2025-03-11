@@ -45870,7 +45870,7 @@ const extensionToLanguageMap = {
     pssc: "",
     other: ""
 };
-const systemPrompt = 'Act as an empathetic software engineer who is an expert in designing and developing React based frontend softwares based on Redux Middleware and Saga framework and adhering to best practices of software architecture.';
+const systemPrompt = 'Act as a software engineer expert in React, Redux and Saga.';
 const instructionsPrompt = `Your task is to review a Pull Request. You will receive a git diff.
 Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities.
 Write your reply and examples in GitHub Markdown format.

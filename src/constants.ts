@@ -62,7 +62,7 @@ export const extensionToLanguageMap: Record<LanguageKey, string> = {
   other: ""
 }
 
-export const systemPrompt = 'Act as an empathetic software engineer who is an expert in designing and developing React based frontend softwares based on Redux Middleware and Saga framework and adhering to best practices of software architecture.'
+export const systemPrompt = 'Act as a software engineer expert in React, Redux and Saga.'
 
 export const instructionsPrompt = `Your task is to review a Pull Request. You will receive a git diff.
 Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities.
