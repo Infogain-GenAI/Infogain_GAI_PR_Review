@@ -135,7 +135,7 @@ export interface CodeReview {
   codeReviewFor(
     file: PullRequestFile
   ): Effect.Effect<ChainValues, NoSuchElementException | UnknownException, DetectLanguage>
-  
+
 }
 
 export const CodeReview = Context.GenericTag<CodeReview>('CodeReview')
@@ -159,6 +159,19 @@ export class CodeReviewClass implements CodeReview {
     })
   }
 
+  //original
+  // codeReviewFor = (
+  //   file: PullRequestFile
+  // ): Effect.Effect<ChainValues, NoSuchElementException | UnknownException, DetectLanguage> =>
+  //   DetectLanguage.pipe(
+  //     Effect.flatMap(DetectLanguage => DetectLanguage.detectLanguage(file.filename)),
+  //     Effect.flatMap(lang =>
+  //       Effect.retry(
+  //         Effect.tryPromise(() => this.chain.call({ lang, diff: file.patch })),
+  //         exponentialBackoffWithJitter(3)
+  //       )
+  //     )
+  //   )
   codeReviewFor = (
     file: PullRequestFile
   ): Effect.Effect<ChainValues, NoSuchElementException | UnknownException, DetectLanguage> =>
@@ -166,22 +179,53 @@ export class CodeReviewClass implements CodeReview {
       Effect.flatMap(DetectLanguage => DetectLanguage.detectLanguage(file.filename)),
       Effect.flatMap(lang =>
         Effect.retry(
-          Effect.tryPromise(() => this.chain.call({ lang, diff: file.patch })),
+          Effect.tryPromise(async () => {
+            try {
+              // Prepare request payload in JSON format
+              const requestPayload = {
+                messages: [
+                  {
+                    role: "system",
+                    content: systemPrompt
+                  },
+                  {
+                    role: "user",
+                    content: JSON.stringify({
+                      language: lang,
+                      diff: file.patch,
+                      filename: file.filename
+                    })
+                  }
+                ],
+                stop: ["\n\nHuman:", "\n\nAssistant:"],
+                max_tokens: 4000,
+                temperature: 0.7
+              }
+
+              const result = await this.chain.call(requestPayload)
+
+              // Log the response for debugging
+              core.debug(`API Response: ${JSON.stringify(result)}`)
+
+              return result
+            } catch (error) {
+              core.error(`Error in code review: ${error}`)
+              throw error
+            }
+          }),
           exponentialBackoffWithJitter(3)
         )
       )
     )
 
-  
 }
 
 export type ArrElement<ArrType> = ArrType extends readonly (infer ElementType)[] ? ElementType : never
 
 export const exponentialBackoffWithJitter = (retries = 3) =>
     Schedule.recurs(retries).pipe(Schedule.compose(Schedule.exponential(1000, 2)), Schedule.jittered)
-  
+
   const RETRIES = 3
-  
+
   export const retryWithBackoff = <A, E, R>(effect: Effect.Effect<A, E, R>): Effect.Effect<A, E, R> =>
     Effect.retry(effect, exponentialBackoffWithJitter(RETRIES))
-  
