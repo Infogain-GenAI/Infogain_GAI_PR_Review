@@ -49635,7 +49635,7 @@ class PullRequestClass {
         }))), esm_Effect/* tap */.bwX(filteredFiles => esm_Effect/* sync */.Z_X(() => core.info(`Filtered files for review ${filteredFiles.length}: ${filteredFiles.map(_ => _.filename)}`))));
         return program;
     };
-    createReviewComment = (requestOptions) => octokitTag.pipe(esm_Effect/* tap */.bwX(_ => core.debug(`Creating review comment: ${JSON.stringify(requestOptions)}`)), esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReviewComment(requestOptions)), exponentialBackoffWithJitter(3))));
+    createReviewComment = (requestOptions) => octokitTag.pipe(esm_Effect/* tap */.bwX(_ => core.debug(`Creating review comment: ${requestOptions}`)), esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReviewComment(requestOptions)), exponentialBackoffWithJitter(3))));
     createReview = (requestOptions) => octokitTag.pipe(esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReview(requestOptions)), exponentialBackoffWithJitter(3))));
 }
 const LanguageDetection = esm_Effect/* sync */.Z_X(() => {
@@ -49751,15 +49751,7 @@ const run = async () => {
                 pull_number: context.payload.number,
                 commit_id: context.payload.pull_request?.head.sha,
                 path: file.filename,
-                body: JSON.stringify({
-                    review_comment: res.text,
-                    metadata: {
-                        file: file.filename,
-                        commit: context.payload.pull_request?.head.sha,
-                        review_type: 'code_review'
-                    }
-                }),
-                //body: res.text,//comments.map((r: any) => r.text).join('\n'), // Consolidate comments//res.text,
+                body: res.text, //comments.map((r: any) => r.text).join('\n'), // Consolidate comments//res.text,
                 subject_type: 'file'
             })));
         })))) //
