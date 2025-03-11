@@ -38,8 +38,7 @@ export const run = async (): Promise<void> => {
   const model: BaseChatModel = new ChatAnthropic({
     temperature,
     anthropicApiKey,
-    modelName: "claude-3.5-sonnet-20240620",
-    maxTokensToSample:4096
+    modelName: "claude-3.5-sonnet-20240620"
   })
 
   const MainLive = init(model, githubToken)
