@@ -49625,8 +49625,7 @@ class CodeReviewClass {
         this.llm = llm;
         this.chain = new llm_chain.LLMChain({
             prompt: this.chatPrompt,
-            llm: this.llm,
-            verbose: true
+            llm: this.llm
         });
     }
     //original

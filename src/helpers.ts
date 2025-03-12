@@ -155,8 +155,7 @@ export class CodeReviewClass implements CodeReview {
     this.llm = llm
     this.chain = new LLMChain({
       prompt: this.chatPrompt,
-      llm: this.llm,
-      verbose: true
+      llm: this.llm
     })
   }
 
