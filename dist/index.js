@@ -49694,7 +49694,8 @@ const run = async () => {
     const model = new langchain_chat_models_anthropic__WEBPACK_IMPORTED_MODULE_4__/* .ChatAnthropic */ .Z({
         temperature,
         anthropicApiKey,
-        modelName: "claude-3.5-sonnet-20240620"
+        modelName: "claude-3.5-sonnet-20240620",
+        maxTokensToSample: 10000
     });
     const MainLive = init(model, githubToken);
     const program = effect__WEBPACK_IMPORTED_MODULE_5__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_5__/* .when */ .gx('pull_request', () => {
