@@ -157,7 +157,7 @@ export class CodeReviewClass implements CodeReview {
     if (!(llm instanceof ChatAnthropic)) {
       throw new Error('LLM must be an instance of ChatAnthropic');
     }
-    llm.maxTokensToSample = 8192
+
     this.llm = llm
     this.chain = new LLMChain({
       prompt: this.chatPrompt,

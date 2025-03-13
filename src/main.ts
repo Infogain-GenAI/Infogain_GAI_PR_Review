@@ -75,8 +75,11 @@ export const run = async (): Promise<void> => {
                 CodeReview.pipe(
                   Effect.flatMap(CodeReview => CodeReview.codeReviewFor(file)),
                   Effect.flatMap(res => {
-                    // // Ensure res is an array
-                    // const comments = Array.isArray(res) ? res : [res];
+                    // Log the response for debugging
+                    core.info(`CodeReview response for file ${file.filename}: ${JSON.stringify(res)}`);
+
+                    // Ensure res is an array
+                    const comments = Array.isArray(res) ? res : [res];
                     return PullRequest.pipe(
                       Effect.flatMap(PullRequest =>
                         PullRequest.createReviewComment({
@@ -85,11 +88,16 @@ export const run = async (): Promise<void> => {
                           pull_number: context.payload.number,
                           commit_id: context.payload.pull_request?.head.sha,
                           path: file.filename,
-                          body: res.text,//comments.map((r: any) => r.text).join('\n'), // Consolidate comments//res.text,
+                          body: comments.map((r: any) => r.text).join('\n'), // Consolidate comments
                           subject_type: 'file'
                         })
                       )
                     );
+                  }),
+                  Effect.catchAll(error => {
+                    // Log the error for debugging
+                    core.error(`Error in CodeReview for file ${file.filename}: ${error}`);
+                    return Effect.fail(error);
                   })
                 )
               )
