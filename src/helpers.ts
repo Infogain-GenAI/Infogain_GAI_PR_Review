@@ -142,7 +142,7 @@ export interface CodeReview {
 export const CodeReview = Context.GenericTag<CodeReview>('CodeReview')
 
 export class CodeReviewClass implements CodeReview {
-  private llm: BaseChatModel
+  private llm: ChatAnthropic
   private chatPrompt = ChatPromptTemplate.fromPromptMessages([
     SystemMessagePromptTemplate.fromTemplate(
       systemPrompt

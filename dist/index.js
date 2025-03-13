@@ -552,8 +552,8 @@ class OidcClient {
             const res = yield httpclient
                 .getJson(id_token_url)
                 .catch(error => {
-                throw new Error(`Failed to get ID Token. \n
-        Error Code : ${error.statusCode}\n
+                throw new Error(`Failed to get ID Token. \n 
+        Error Code : ${error.statusCode}\n 
         Error Message: ${error.message}`);
             });
             const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
@@ -9138,7 +9138,7 @@ function expand(str, isTop) {
     ? expand(m.post, false)
     : [''];
 
-  if (/\$$/.test(m.pre)) {
+  if (/\$$/.test(m.pre)) {    
     for (var k = 0; k < post.length; k++) {
       var expansion = pre+ '{' + m.body + '}' + post[k];
       expansions.push(expansion);
@@ -44657,7 +44657,7 @@ class AST {
                         const aps = addPatternStart;
                         // check if we have a possibility of matching . or ..,
                         // and prevent that.
-                        const needNoTrav =
+                        const needNoTrav = 
                         // dots are allowed, and the pattern starts with [ or .
                         (this.#options.dot && aps.has(src.charAt(0))) ||
                             // the pattern starts with \., and then [ or .
@@ -47211,17 +47211,17 @@ const getTableAndColumnsName = async (appDataSource) => {
     let sql;
     if (appDataSource.options.type === "postgres") {
         const schema = appDataSource.options?.schema ?? "public";
-        sql = `SELECT
-            t.table_name,
-            c.*
-          FROM
-            information_schema.tables t
-              JOIN information_schema.columns c
-                ON t.table_name = c.table_name
-          WHERE
-            t.table_schema = '${schema}'
-              AND c.table_schema = '${schema}'
-          ORDER BY
+        sql = `SELECT 
+            t.table_name, 
+            c.* 
+          FROM 
+            information_schema.tables t 
+              JOIN information_schema.columns c 
+                ON t.table_name = c.table_name 
+          WHERE 
+            t.table_schema = '${schema}' 
+              AND c.table_schema = '${schema}' 
+          ORDER BY 
             t.table_name,
             c.ordinal_position;`;
         const rep = await appDataSource.query(sql);
@@ -47753,13 +47753,13 @@ var few_shot = __nccwpck_require__(5382);
 
 const constitutionalPrompt = `Human: {input_prompt}
 Model: {output_from_model}
-
+    
 Critique Request: {critique_request}
-
+    
 Critique: {critique}
-
+    
 Revision request: {revision_request}
-
+    
 Revision: {revision}`;
 const critiqueExample = /* #__PURE__ */ new prompts_prompt.PromptTemplate({
     template: constitutionalPrompt,
@@ -47804,9 +47804,9 @@ const constitutional_prompts_CRITIQUE_PROMPT = /* #__PURE__ */ new few_shot.FewS
     prefix: "Below is conversation between a human and an AI model.",
     suffix: `Human: {input_prompt}
 Model: {output_from_model}
-
+    
 Critique Request: {critique_request}
-
+    
 Critique:`,
     exampleSeparator: "\n === \n",
     inputVariables: ["input_prompt", "output_from_model", "critique_request"],
@@ -94824,9 +94824,9 @@ function ensureHandler(handler) {
  * Base interface that all chains must implement.
  */
 class BaseChain extends _base_language_index_js__WEBPACK_IMPORTED_MODULE_1__/* .BaseLangChain */ .B {
-    constructor(fields,
+    constructor(fields, 
     /** @deprecated */
-    verbose,
+    verbose, 
     /** @deprecated */
     callbacks) {
         if (arguments.length === 1 &&
@@ -95542,7 +95542,7 @@ const DEFAULT_QA_PROMPT = /*#__PURE__*/ new prompts_prompt.PromptTemplate({
     template: "Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.\n\n{context}\n\nQuestion: {question}\nHelpful Answer:",
     inputVariables: ["context", "question"],
 });
-const system_template = `Use the following pieces of context to answer the users question.
+const system_template = `Use the following pieces of context to answer the users question. 
 If you don't know the answer, just say that you don't know, don't try to make up an answer.
 ----------------
 {context}`;
@@ -95550,7 +95550,7 @@ const messages = [
     /*#__PURE__*/ chat/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(system_template),
     /*#__PURE__*/ chat/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate("{question}"),
 ];
-const CHAT_PROMPT =
+const CHAT_PROMPT = 
 /*#__PURE__*/ chat/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages(messages);
 const QA_PROMPT_SELECTOR = /*#__PURE__*/ new ConditionalPromptSelector(DEFAULT_QA_PROMPT, [[isChatModel, CHAT_PROMPT]]);
 
@@ -95559,15 +95559,15 @@ const QA_PROMPT_SELECTOR = /*#__PURE__*/ new ConditionalPromptSelector(DEFAULT_Q
 
 
 
-const qa_template = `Use the following portion of a long document to see if any of the text is relevant to answer the question.
+const qa_template = `Use the following portion of a long document to see if any of the text is relevant to answer the question. 
 Return any relevant text verbatim.
 {context}
 Question: {question}
 Relevant text, if any:`;
-const DEFAULT_COMBINE_QA_PROMPT =
+const DEFAULT_COMBINE_QA_PROMPT = 
 /*#__PURE__*/
 prompts_prompt.PromptTemplate.fromTemplate(qa_template);
-const map_reduce_prompts_system_template = `Use the following portion of a long document to see if any of the text is relevant to answer the question.
+const map_reduce_prompts_system_template = `Use the following portion of a long document to see if any of the text is relevant to answer the question. 
 Return any relevant text verbatim.
 ----------------
 {context}`;
@@ -95575,13 +95575,13 @@ const map_reduce_prompts_messages = [
     /*#__PURE__*/ chat/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(map_reduce_prompts_system_template),
     /*#__PURE__*/ chat/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate("{question}"),
 ];
-const CHAT_QA_PROMPT =
+const CHAT_QA_PROMPT = 
 /*#__PURE__*/ chat/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages(map_reduce_prompts_messages);
-const map_reduce_prompts_COMBINE_QA_PROMPT_SELECTOR =
+const map_reduce_prompts_COMBINE_QA_PROMPT_SELECTOR = 
 /*#__PURE__*/ new ConditionalPromptSelector(DEFAULT_COMBINE_QA_PROMPT, [
     [isChatModel, CHAT_QA_PROMPT],
 ]);
-const combine_prompt = `Given the following extracted parts of a long document and a question, create a final answer.
+const combine_prompt = `Given the following extracted parts of a long document and a question, create a final answer. 
 If you don't know the answer, just say that you don't know. Don't try to make up an answer.
 
 QUESTION: Which state/country's law governs the interpretation of the contract?
@@ -95611,9 +95611,9 @@ QUESTION: {question}
 {summaries}
 =========
 FINAL ANSWER:`;
-const COMBINE_PROMPT =
+const COMBINE_PROMPT = 
 /*#__PURE__*/ prompts_prompt.PromptTemplate.fromTemplate(combine_prompt);
-const system_combine_template = `Given the following extracted parts of a long document and a question, create a final answer.
+const system_combine_template = `Given the following extracted parts of a long document and a question, create a final answer. 
 If you don't know the answer, just say that you don't know. Don't try to make up an answer.
 ----------------
 {summaries}`;
@@ -95621,9 +95621,9 @@ const combine_messages = [
     /*#__PURE__*/ chat/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(system_combine_template),
     /*#__PURE__*/ chat/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate("{question}"),
 ];
-const CHAT_COMBINE_PROMPT =
+const CHAT_COMBINE_PROMPT = 
 /*#__PURE__*/ chat/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages(combine_messages);
-const map_reduce_prompts_COMBINE_PROMPT_SELECTOR =
+const map_reduce_prompts_COMBINE_PROMPT_SELECTOR = 
 /*#__PURE__*/ new ConditionalPromptSelector(COMBINE_PROMPT, [
     [isChatModel, CHAT_COMBINE_PROMPT],
 ]);
@@ -95641,7 +95641,7 @@ We have the opportunity to refine the existing answer
 ------------
 {context}
 ------------
-Given the new context, refine the original answer to better answer the question.
+Given the new context, refine the original answer to better answer the question. 
 If the context isn't useful, return the original answer.`;
 const DEFAULT_REFINE_PROMPT = /*#__PURE__*/ new prompts/* PromptTemplate */.Pf({
     inputVariables: ["question", "existing_answer", "context"],
@@ -95654,20 +95654,20 @@ We have the opportunity to refine the existing answer
 ------------
 {context}
 ------------
-Given the new context, refine the original answer to better answer the question.
+Given the new context, refine the original answer to better answer the question. 
 If the context isn't useful, return the original answer.`;
 const refine_prompts_messages = [
     /*#__PURE__*/ prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate("{question}"),
     /*#__PURE__*/ prompts/* AIMessagePromptTemplate.fromTemplate */.gc.fromTemplate("{existing_answer}"),
     /*#__PURE__*/ prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(refineTemplate),
 ];
-const CHAT_REFINE_PROMPT =
+const CHAT_REFINE_PROMPT = 
 /*#__PURE__*/ prompts/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages(refine_prompts_messages);
-const refine_prompts_REFINE_PROMPT_SELECTOR =
+const refine_prompts_REFINE_PROMPT_SELECTOR = 
 /*#__PURE__*/ new ConditionalPromptSelector(DEFAULT_REFINE_PROMPT, [
     [isChatModel, CHAT_REFINE_PROMPT],
 ]);
-const DEFAULT_TEXT_QA_PROMPT_TMPL = `Context information is below.
+const DEFAULT_TEXT_QA_PROMPT_TMPL = `Context information is below. 
 ---------------------
 {context}
 ---------------------
@@ -95676,7 +95676,7 @@ const DEFAULT_TEXT_QA_PROMPT = /*#__PURE__*/ new prompts/* PromptTemplate */.Pf(
     inputVariables: ["context", "question"],
     template: DEFAULT_TEXT_QA_PROMPT_TMPL,
 });
-const chat_qa_prompt_template = `Context information is below.
+const chat_qa_prompt_template = `Context information is below. 
 ---------------------
 {context}
 ---------------------
@@ -95685,9 +95685,9 @@ const chat_messages = [
     /*#__PURE__*/ prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(chat_qa_prompt_template),
     /*#__PURE__*/ prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate("{question}"),
 ];
-const CHAT_QUESTION_PROMPT =
+const CHAT_QUESTION_PROMPT = 
 /*#__PURE__*/ prompts/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages(chat_messages);
-const refine_prompts_QUESTION_PROMPT_SELECTOR =
+const refine_prompts_QUESTION_PROMPT_SELECTOR = 
 /*#__PURE__*/ new ConditionalPromptSelector(DEFAULT_TEXT_QA_PROMPT, [
     [isChatModel, CHAT_QUESTION_PROMPT],
 ]);
@@ -96609,7 +96609,7 @@ class ChatPromptTemplate extends BaseChatPromptTemplate {
         promptMessage instanceof ChatPromptTemplate
             ? promptMessage.promptMessages
             : [promptMessage]), []);
-        const flattenedPartialVariables = promptMessages.reduce((acc, promptMessage) =>
+        const flattenedPartialVariables = promptMessages.reduce((acc, promptMessage) => 
         // eslint-disable-next-line no-instanceof/no-instanceof
         promptMessage instanceof ChatPromptTemplate
             ? Object.assign(acc, promptMessage.partialVariables)
@@ -97863,7 +97863,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /************************************************************************/
 /******/ // The module cache
 /******/ var __webpack_module_cache__ = {};
-/******/
+/******/ 
 /******/ // The require function
 /******/ function __nccwpck_require__(moduleId) {
 /******/ 	// Check if module is in cache
@@ -97877,7 +97877,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 		loaded: false,
 /******/ 		exports: {}
 /******/ 	};
-/******/
+/******/ 
 /******/ 	// Execute the module function
 /******/ 	var threw = true;
 /******/ 	try {
@@ -97886,17 +97886,17 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	} finally {
 /******/ 		if(threw) delete __webpack_module_cache__[moduleId];
 /******/ 	}
-/******/
+/******/ 
 /******/ 	// Flag the module as loaded
 /******/ 	module.loaded = true;
-/******/
+/******/ 
 /******/ 	// Return the exports of the module
 /******/ 	return module.exports;
 /******/ }
-/******/
+/******/ 
 /******/ // expose the modules object (__webpack_modules__)
 /******/ __nccwpck_require__.m = __webpack_modules__;
-/******/
+/******/ 
 /************************************************************************/
 /******/ /* webpack/runtime/async module */
 /******/ (() => {
@@ -97966,7 +97966,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 		queue && (queue.d = 0);
 /******/ 	};
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/compat get default export */
 /******/ (() => {
 /******/ 	// getDefaultExport function for compatibility with non-harmony modules
@@ -97978,7 +97978,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 		return getter;
 /******/ 	};
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/create fake namespace object */
 /******/ (() => {
 /******/ 	var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
@@ -98008,7 +98008,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 		return ns;
 /******/ 	};
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/define property getters */
 /******/ (() => {
 /******/ 	// define getter functions for harmony exports
@@ -98020,7 +98020,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 		}
 /******/ 	};
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/ensure chunk */
 /******/ (() => {
 /******/ 	__nccwpck_require__.f = {};
@@ -98033,7 +98033,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 		}, []));
 /******/ 	};
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/get javascript chunk filename */
 /******/ (() => {
 /******/ 	// This function allow to reference async chunks
@@ -98042,12 +98042,12 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 		return "" + chunkId + ".index.js";
 /******/ 	};
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/hasOwnProperty shorthand */
 /******/ (() => {
 /******/ 	__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/make namespace object */
 /******/ (() => {
 /******/ 	// define __esModule on exports
@@ -98058,7 +98058,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 		Object.defineProperty(exports, '__esModule', { value: true });
 /******/ 	};
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/node module decorator */
 /******/ (() => {
 /******/ 	__nccwpck_require__.nmd = (module) => {
@@ -98067,22 +98067,22 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 		return module;
 /******/ 	};
 /******/ })();
-/******/
+/******/ 
 /******/ /* webpack/runtime/compat */
-/******/
+/******/ 
 /******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = new URL('.', import.meta.url).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
-/******/
+/******/ 
 /******/ /* webpack/runtime/import chunk loading */
 /******/ (() => {
 /******/ 	// no baseURI
-/******/
+/******/ 	
 /******/ 	// object to store loaded and loading chunks
 /******/ 	// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 	// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 	var installedChunks = {
 /******/ 		179: 0
 /******/ 	};
-/******/
+/******/ 	
 /******/ 	var installChunk = (data) => {
 /******/ 		var {ids, modules, runtime} = data;
 /******/ 		// add "modules" to the modules object,
@@ -98101,14 +98101,14 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 			}
 /******/ 			installedChunks[ids[i]] = 0;
 /******/ 		}
-/******/
+/******/ 	
 /******/ 	}
-/******/
+/******/ 	
 /******/ 	__nccwpck_require__.f.j = (chunkId, promises) => {
 /******/ 			// import() chunk loading for javascript
 /******/ 			var installedChunkData = __nccwpck_require__.o(installedChunks, chunkId) ? installedChunks[chunkId] : undefined;
 /******/ 			if(installedChunkData !== 0) { // 0 means "already installed".
-/******/
+/******/ 	
 /******/ 				// a Promise means "currently loading".
 /******/ 				if(installedChunkData) {
 /******/ 					promises.push(installedChunkData[1]);
@@ -98125,14 +98125,14 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 				}
 /******/ 			}
 /******/ 	};
-/******/
+/******/ 	
 /******/ 	// no external install chunk
-/******/
+/******/ 	
 /******/ 	// no on chunks loaded
 /******/ })();
-/******/
+/******/ 
 /************************************************************************/
-/******/
+/******/ 
 /******/ // startup
 /******/ // Load entry module and return exports
 /******/ // This entry module used 'module' so it can't be inlined
@@ -98140,4 +98140,4 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ __webpack_exports__ = await __webpack_exports__;
 /******/ var __webpack_exports__run = __webpack_exports__.K;
 /******/ export { __webpack_exports__run as run };
-/******/
+/******/ 
