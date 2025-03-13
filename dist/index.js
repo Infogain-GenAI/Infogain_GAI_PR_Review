@@ -2111,7 +2111,7 @@ class Client {
     }
     complete(params, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield (0, cross_fetch_1.default)(`${this.apiUrl}/v1/messages`, {
+            const response = yield (0, cross_fetch_1.default)(`${this.apiUrl}/v1/complete`, {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
