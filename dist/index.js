@@ -49578,7 +49578,10 @@ class MultiRetrievalQAChain extends (/* unused pure expression or super */ null 
 
 ;// CONCATENATED MODULE: ./node_modules/langchain/chains.js
 
+// EXTERNAL MODULE: ./node_modules/langchain/chat_models/anthropic.js + 1 modules
+var anthropic = __nccwpck_require__(6855);
 ;// CONCATENATED MODULE: ./src/helpers.ts
+
 
 
 
@@ -49622,6 +49625,9 @@ class CodeReviewClass {
     ]);
     chain;
     constructor(llm) {
+        if (!(llm instanceof anthropic/* ChatAnthropic */.Z)) {
+            throw new Error('LLM must be an instance of ChatAnthropic');
+        }
         this.llm = llm;
         this.chain = new llm_chain.LLMChain({
             prompt: this.chatPrompt,
@@ -49693,7 +49699,7 @@ const run = async () => {
     const model = new langchain_chat_models_anthropic__WEBPACK_IMPORTED_MODULE_4__/* .ChatAnthropic */ .Z({
         temperature,
         anthropicApiKey,
-        modelName: "claude-3-7-sonnet-20250219"
+        modelName: "claude-3-opus-20240229"
     });
     const MainLive = init(model, githubToken);
     const program = effect__WEBPACK_IMPORTED_MODULE_5__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_5__/* .when */ .gx('pull_request', () => {

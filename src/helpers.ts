@@ -11,6 +11,7 @@ import type { ChainValues } from 'langchain/schema'
 import parseDiff from 'parse-diff'
 import { NoSuchElementException, UnknownException } from 'effect/Cause'
 import { constant } from 'effect/Function'
+import { ChatAnthropic } from 'langchain/chat_models/anthropic'
 
 export type PullRequestFileResponse = RestEndpointMethodTypes['pulls']['listFiles']['response']
 
@@ -152,6 +153,9 @@ export class CodeReviewClass implements CodeReview {
   private chain: LLMChain<string>
 
   constructor(llm: BaseChatModel) {
+    if (!(llm instanceof ChatAnthropic)) {
+      throw new Error('LLM must be an instance of ChatAnthropic');
+    }
     this.llm = llm
     this.chain = new LLMChain({
       prompt: this.chatPrompt,
