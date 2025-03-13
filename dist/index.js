@@ -49618,7 +49618,7 @@ const getFileExtension = (filename) => {
 };
 const CodeReview = Context/* GenericTag */.hV('CodeReview');
 class CodeReviewClass {
-    llm;
+    llm; //changed
     chatPrompt = prompts/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages([
         prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(systemPrompt),
         prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(instructionsPrompt)
@@ -49628,10 +49628,11 @@ class CodeReviewClass {
         if (!(llm instanceof anthropic/* ChatAnthropic */.Z)) {
             throw new Error('LLM must be an instance of ChatAnthropic');
         }
+        llm.maxTokensToSample = 8192;
         this.llm = llm;
         this.chain = new llm_chain.LLMChain({
             prompt: this.chatPrompt,
-            llm: this.llm
+            llm: llm
         });
     }
     //original
@@ -49699,7 +49700,8 @@ const run = async () => {
     const model = new langchain_chat_models_anthropic__WEBPACK_IMPORTED_MODULE_4__/* .ChatAnthropic */ .Z({
         temperature,
         anthropicApiKey,
-        modelName: "claude-3-opus-20240229"
+        modelName: "claude-3-opus-20240229",
+        maxTokensToSample: 8192
     });
     const MainLive = init(model, githubToken);
     const program = effect__WEBPACK_IMPORTED_MODULE_5__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_5__/* .when */ .gx('pull_request', () => {

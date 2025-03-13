@@ -13,6 +13,7 @@ import { NoSuchElementException, UnknownException } from 'effect/Cause'
 import { constant } from 'effect/Function'
 import { ChatAnthropic } from 'langchain/chat_models/anthropic'
 
+
 export type PullRequestFileResponse = RestEndpointMethodTypes['pulls']['listFiles']['response']
 
 export type PullRequestFile = ArrElement<PullRequestFileResponse['data']>
@@ -142,7 +143,7 @@ export interface CodeReview {
 export const CodeReview = Context.GenericTag<CodeReview>('CodeReview')
 
 export class CodeReviewClass implements CodeReview {
-  private llm: ChatAnthropic
+  private llm: BaseChatModel  //changed
   private chatPrompt = ChatPromptTemplate.fromPromptMessages([
     SystemMessagePromptTemplate.fromTemplate(
       systemPrompt
@@ -156,10 +157,11 @@ export class CodeReviewClass implements CodeReview {
     if (!(llm instanceof ChatAnthropic)) {
       throw new Error('LLM must be an instance of ChatAnthropic');
     }
+    llm.maxTokensToSample = 8192
     this.llm = llm
     this.chain = new LLMChain({
       prompt: this.chatPrompt,
-      llm: this.llm
+      llm:llm
     })
   }
 
