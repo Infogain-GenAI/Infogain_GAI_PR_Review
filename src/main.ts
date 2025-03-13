@@ -2,11 +2,11 @@ import { config } from 'dotenv'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import type { PullRequestEvent } from '@octokit/webhooks-definitions/schema.js'
-import { ChatOpenAI } from 'langchain/chat_models'
+//import { ChatOpenAI } from 'langchain/chat_models'
 import { BaseChatModel } from 'langchain/chat_models'
 import { Effect, Layer, Match, pipe, Exit } from 'effect'
 import { CodeReview, CodeReviewClass, DetectLanguage, octokitTag, PullRequest, PullRequestClass } from './helpers.js'
-import { ChatAnthropic } from 'langchain/chat_models/anthropic'
+import { ChatAnthropic } from 'langchain/chat_models'
 
 config()
 let isBlockExecuted = false; // Flag to ensure the block runs only once
@@ -35,12 +35,12 @@ export const run = async (): Promise<void> => {
   //   // azureOpenAIApiDeploymentName,
   //   // azureOpenAIApiVersion
   // })
+
   const model: BaseChatModel = new ChatAnthropic({
-    temperature,
-    anthropicApiKey,
-    modelName: "claude-3-opus-20240229",
-    maxTokensToSample: 8192
-  })
+       temperature,
+       anthropicApiKey,
+       modelName
+     })
 
   const MainLive = init(model, githubToken)
 
@@ -75,11 +75,8 @@ export const run = async (): Promise<void> => {
                 CodeReview.pipe(
                   Effect.flatMap(CodeReview => CodeReview.codeReviewFor(file)),
                   Effect.flatMap(res => {
-                    // Log the response for debugging
-                    core.info(`CodeReview response for file ${file.filename}: ${JSON.stringify(res)}`);
-
-                    // Ensure res is an array
-                    const comments = Array.isArray(res) ? res : [res];
+                    // // Ensure res is an array
+                    // const comments = Array.isArray(res) ? res : [res];
                     return PullRequest.pipe(
                       Effect.flatMap(PullRequest =>
                         PullRequest.createReviewComment({
@@ -88,16 +85,11 @@ export const run = async (): Promise<void> => {
                           pull_number: context.payload.number,
                           commit_id: context.payload.pull_request?.head.sha,
                           path: file.filename,
-                          body: comments.map((r: any) => r.text).join('\n'), // Consolidate comments
+                          body: res.text,//comments.map((r: any) => r.text).join('\n'), // Consolidate comments//res.text,
                           subject_type: 'file'
                         })
                       )
                     );
-                  }),
-                  Effect.catchAll(error => {
-                    // Log the error for debugging
-                    core.error(`Error in CodeReview for file ${file.filename}: ${error}`);
-                    return Effect.fail(error);
                   })
                 )
               )

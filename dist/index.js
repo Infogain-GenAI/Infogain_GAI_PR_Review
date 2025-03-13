@@ -9239,6 +9239,40 @@ function expand(str, isTop) {
 
 /***/ }),
 
+/***/ 9145:
+/***/ ((__unused_webpack_module, exports) => {
+
+var __webpack_unused_export__;
+
+
+__webpack_unused_export__ = ({
+  value: true
+});
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var isBrowser = typeof window !== "undefined" && typeof window.document !== "undefined";
+
+var isNode = typeof process !== "undefined" && process.versions != null && process.versions.node != null;
+
+var isWebWorker = (typeof self === "undefined" ? "undefined" : _typeof(self)) === "object" && self.constructor && self.constructor.name === "DedicatedWorkerGlobalScope";
+
+/**
+ * @see https://github.com/jsdom/jsdom/releases/tag/12.0.0
+ * @see https://github.com/jsdom/jsdom/issues/1537
+ */
+var isJsDom = typeof window !== "undefined" && window.name === "nodejs" || typeof navigator !== "undefined" && (navigator.userAgent.includes("Node.js") || navigator.userAgent.includes("jsdom"));
+
+var isDeno = typeof Deno !== "undefined" && typeof Deno.version !== "undefined" && typeof Deno.version.deno !== "undefined";
+
+__webpack_unused_export__ = isBrowser;
+__webpack_unused_export__ = isWebWorker;
+exports.UG = isNode;
+__webpack_unused_export__ = isJsDom;
+__webpack_unused_export__ = isDeno;
+
+/***/ }),
+
 /***/ 333:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -49578,10 +49612,7 @@ class MultiRetrievalQAChain extends (/* unused pure expression or super */ null 
 
 ;// CONCATENATED MODULE: ./node_modules/langchain/chains.js
 
-// EXTERNAL MODULE: ./node_modules/langchain/chat_models/anthropic.js + 1 modules
-var anthropic = __nccwpck_require__(6855);
 ;// CONCATENATED MODULE: ./src/helpers.ts
-
 
 
 
@@ -49618,23 +49649,19 @@ const getFileExtension = (filename) => {
 };
 const CodeReview = Context/* GenericTag */.hV('CodeReview');
 class CodeReviewClass {
-    llm; //changed
+    llm;
     chatPrompt = prompts/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages([
         prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(systemPrompt),
         prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(instructionsPrompt)
     ]);
     chain;
     constructor(llm) {
-        if (!(llm instanceof anthropic/* ChatAnthropic */.Z)) {
-            throw new Error('LLM must be an instance of ChatAnthropic');
-        }
         this.llm = llm;
         this.chain = new llm_chain.LLMChain({
             prompt: this.chatPrompt,
-            llm: llm
+            llm: this.llm
         });
     }
-    //original
     codeReviewFor = (file) => DetectLanguage.pipe(esm_Effect/* flatMap */.VSD(DetectLanguage => DetectLanguage.detectLanguage(file.filename)), esm_Effect/* flatMap */.VSD(lang => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => this.chain.call({ lang, diff: file.patch })), exponentialBackoffWithJitter(3))));
 }
 const exponentialBackoffWithJitter = (retries = 3) => recurs(retries).pipe(compose(exponential(1000, 2)), jittered);
@@ -49663,7 +49690,7 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 /* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(4747);
 /* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(7196);
 /* harmony import */ var _helpers_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(475);
-/* harmony import */ var langchain_chat_models_anthropic__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(6855);
+/* harmony import */ var langchain_chat_models__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(7985);
 
 
 
@@ -49696,11 +49723,10 @@ const run = async () => {
     //   // azureOpenAIApiDeploymentName,
     //   // azureOpenAIApiVersion
     // })
-    const model = new langchain_chat_models_anthropic__WEBPACK_IMPORTED_MODULE_4__/* .ChatAnthropic */ .Z({
+    const model = new langchain_chat_models__WEBPACK_IMPORTED_MODULE_4__/* .ChatAnthropic */ .Z2({
         temperature,
         anthropicApiKey,
-        modelName: "claude-3-opus-20240229",
-        maxTokensToSample: 8192
+        modelName
     });
     const MainLive = init(model, githubToken);
     const program = effect__WEBPACK_IMPORTED_MODULE_5__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_5__/* .when */ .gx('pull_request', () => {
@@ -49710,23 +49736,17 @@ const run = async () => {
             .split(',')
             .map(_ => _.trim())));
         const a = excludeFilePatterns.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(filePattens => _helpers_js__WEBPACK_IMPORTED_MODULE_3__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(PullRequest => PullRequest.getFilesForReview(owner, repo, context.payload.number, filePattens)), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => files.filter(file => file.patch !== undefined))), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_7__/* .forEach */ .Ed_(files, file => _helpers_js__WEBPACK_IMPORTED_MODULE_3__/* .CodeReview.pipe */ .OD.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(CodeReview => CodeReview.codeReviewFor(file)), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(res => {
-            // Log the response for debugging
-            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`CodeReview response for file ${file.filename}: ${JSON.stringify(res)}`);
-            // Ensure res is an array
-            const comments = Array.isArray(res) ? res : [res];
+            // // Ensure res is an array
+            // const comments = Array.isArray(res) ? res : [res];
             return _helpers_js__WEBPACK_IMPORTED_MODULE_3__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(PullRequest => PullRequest.createReviewComment({
                 repo,
                 owner,
                 pull_number: context.payload.number,
                 commit_id: context.payload.pull_request?.head.sha,
                 path: file.filename,
-                body: comments.map((r) => r.text).join('\n'), // Consolidate comments
+                body: res.text, //comments.map((r: any) => r.text).join('\n'), // Consolidate comments//res.text,
                 subject_type: 'file'
             })));
-        }), effect__WEBPACK_IMPORTED_MODULE_7__/* .catchAll */ .kmb(error => {
-            // Log the error for debugging
-            _actions_core__WEBPACK_IMPORTED_MODULE_1__.error(`Error in CodeReview for file ${file.filename}: ${error}`);
-            return effect__WEBPACK_IMPORTED_MODULE_7__/* .fail */ .bGj(error);
         })))) //
         )));
         return a;
@@ -58196,8 +58216,6 @@ const format = self => {
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "kmb": () => (/* binding */ catchAll),
-  "bGj": () => (/* binding */ Effect_fail),
   "VSD": () => (/* binding */ flatMap),
   "Ed_": () => (/* binding */ Effect_forEach),
   "UID": () => (/* binding */ map),
@@ -58209,7 +58227,7 @@ __nccwpck_require__.d(__webpack_exports__, {
   "p6W": () => (/* binding */ tryPromise)
 });
 
-// UNUSED EXPORTS: Do, EffectTypeId, Tag, acquireRelease, acquireReleaseInterruptible, acquireUseRelease, addFinalizer, all, allSuccesses, allWith, allowInterrupt, andThen, annotateCurrentSpan, annotateLogs, annotateLogsScoped, annotateSpans, ap, as, asSome, asSomeError, asVoid, async, asyncEffect, awaitAllChildren, bind, bindTo, blocked, cacheRequestResult, cached, cachedFunction, cachedInvalidateWithTTL, cachedWithTTL, catch, catchAllCause, catchAllDefect, catchIf, catchSome, catchSomeCause, catchSomeDefect, catchTag, catchTags, cause, checkInterruptible, clock, clockWith, configProviderWith, console, consoleWith, context, contextWith, contextWithEffect, currentParentSpan, currentSpan, custom, daemonChildren, delay, descriptor, descriptorWith, die, dieMessage, dieSync, diffFiberRefs, disconnect, dropUntil, dropWhile, either, ensuring, ensuringChild, ensuringChildren, eventually, every, exists, exit, failCause, failCauseSync, failSync, fiberId, fiberIdWith, filter, filterMap, filterOrDie, filterOrDieMessage, filterOrElse, filterOrFail, finalizersMask, findFirst, firstSuccessOf, flatten, flip, flipWith, forever, fork, forkAll, forkDaemon, forkIn, forkScoped, forkWithErrorHandler, fromFiber, fromFiberEffect, fromNullable, functionWithSpan, gen, getFiberRefs, getRuntimeFlags, head, if, ignore, ignoreLogged, inheritFiberRefs, interrupt, interruptWith, interruptible, interruptibleMask, intoDeferred, isEffect, isFailure, isSuccess, iterate, labelMetrics, labelMetricsScoped, let, liftPredicate, linkSpans, locally, locallyScoped, locallyScopedWith, locallyWith, log, logAnnotations, logDebug, logError, logFatal, logInfo, logTrace, logWarning, logWithLevel, loop, makeSemaphore, makeSpan, makeSpanScoped, mapAccum, mapBoth, mapError, mapErrorCause, mapInputContext, match, matchCause, matchCauseEffect, matchEffect, merge, mergeAll, metricLabels, negate, never, none, onError, onExit, onInterrupt, once, option, optionFromOptional, orDie, orDieWith, orElse, orElseFail, orElseSucceed, parallelErrors, parallelFinalizers, partition, patchFiberRefs, patchRuntimeFlags, promise, provideService, provideServiceEffect, race, raceAll, raceFirst, raceWith, random, randomWith, reduce, reduceEffect, reduceRight, reduceWhile, repeat, repeatN, repeatOrElse, replicate, replicateEffect, request, retryOrElse, runCallback, runFork, runPromise, runRequestBlock, runSync, runSyncExit, runtime, sandbox, schedule, scheduleForked, scheduleFrom, scope, scopeWith, scoped, sequentialFinalizers, serviceConstants, serviceFunction, serviceFunctionEffect, serviceFunctions, serviceMembers, serviceOption, serviceOptional, setFiberRefs, sleep, spanAnnotations, spanLinks, step, succeed, succeedNone, succeedSome, summarized, supervised, suspend, tagMetrics, tagMetricsScoped, takeUntil, takeWhile, tapBoth, tapDefect, tapError, tapErrorCause, tapErrorTag, timed, timedWith, timeout, timeoutFail, timeoutFailCause, timeoutOption, timeoutTo, tracer, tracerWith, transplant, try, tryMap, tryMapPromise, uninterruptible, uninterruptibleMask, unless, unlessEffect, unsafeMakeSemaphore, unsandbox, updateFiberRefs, updateService, useSpan, using, validate, validateAll, validateFirst, validateWith, void, when, whenEffect, whenFiberRef, whenRef, whileLoop, withClock, withClockScoped, withConcurrency, withConfigProvider, withConfigProviderScoped, withConsole, withConsoleScoped, withEarlyRelease, withFiberRuntime, withLogSpan, withMaxOpsBeforeYield, withMetric, withParentSpan, withRandom, withRandomScoped, withRequestBatching, withRequestCache, withRequestCaching, withRuntimeFlagsPatch, withRuntimeFlagsPatchScoped, withScheduler, withSchedulingPriority, withSpan, withSpanScoped, withTracer, withTracerEnabled, withTracerScoped, withTracerTiming, withUnhandledErrorLogLevel, yieldNow, zip, zipLeft, zipRight, zipWith
+// UNUSED EXPORTS: Do, EffectTypeId, Tag, acquireRelease, acquireReleaseInterruptible, acquireUseRelease, addFinalizer, all, allSuccesses, allWith, allowInterrupt, andThen, annotateCurrentSpan, annotateLogs, annotateLogsScoped, annotateSpans, ap, as, asSome, asSomeError, asVoid, async, asyncEffect, awaitAllChildren, bind, bindTo, blocked, cacheRequestResult, cached, cachedFunction, cachedInvalidateWithTTL, cachedWithTTL, catch, catchAll, catchAllCause, catchAllDefect, catchIf, catchSome, catchSomeCause, catchSomeDefect, catchTag, catchTags, cause, checkInterruptible, clock, clockWith, configProviderWith, console, consoleWith, context, contextWith, contextWithEffect, currentParentSpan, currentSpan, custom, daemonChildren, delay, descriptor, descriptorWith, die, dieMessage, dieSync, diffFiberRefs, disconnect, dropUntil, dropWhile, either, ensuring, ensuringChild, ensuringChildren, eventually, every, exists, exit, fail, failCause, failCauseSync, failSync, fiberId, fiberIdWith, filter, filterMap, filterOrDie, filterOrDieMessage, filterOrElse, filterOrFail, finalizersMask, findFirst, firstSuccessOf, flatten, flip, flipWith, forever, fork, forkAll, forkDaemon, forkIn, forkScoped, forkWithErrorHandler, fromFiber, fromFiberEffect, fromNullable, functionWithSpan, gen, getFiberRefs, getRuntimeFlags, head, if, ignore, ignoreLogged, inheritFiberRefs, interrupt, interruptWith, interruptible, interruptibleMask, intoDeferred, isEffect, isFailure, isSuccess, iterate, labelMetrics, labelMetricsScoped, let, liftPredicate, linkSpans, locally, locallyScoped, locallyScopedWith, locallyWith, log, logAnnotations, logDebug, logError, logFatal, logInfo, logTrace, logWarning, logWithLevel, loop, makeSemaphore, makeSpan, makeSpanScoped, mapAccum, mapBoth, mapError, mapErrorCause, mapInputContext, match, matchCause, matchCauseEffect, matchEffect, merge, mergeAll, metricLabels, negate, never, none, onError, onExit, onInterrupt, once, option, optionFromOptional, orDie, orDieWith, orElse, orElseFail, orElseSucceed, parallelErrors, parallelFinalizers, partition, patchFiberRefs, patchRuntimeFlags, promise, provideService, provideServiceEffect, race, raceAll, raceFirst, raceWith, random, randomWith, reduce, reduceEffect, reduceRight, reduceWhile, repeat, repeatN, repeatOrElse, replicate, replicateEffect, request, retryOrElse, runCallback, runFork, runPromise, runRequestBlock, runSync, runSyncExit, runtime, sandbox, schedule, scheduleForked, scheduleFrom, scope, scopeWith, scoped, sequentialFinalizers, serviceConstants, serviceFunction, serviceFunctionEffect, serviceFunctions, serviceMembers, serviceOption, serviceOptional, setFiberRefs, sleep, spanAnnotations, spanLinks, step, succeed, succeedNone, succeedSome, summarized, supervised, suspend, tagMetrics, tagMetricsScoped, takeUntil, takeWhile, tapBoth, tapDefect, tapError, tapErrorCause, tapErrorTag, timed, timedWith, timeout, timeoutFail, timeoutFailCause, timeoutOption, timeoutTo, tracer, tracerWith, transplant, try, tryMap, tryMapPromise, uninterruptible, uninterruptibleMask, unless, unlessEffect, unsafeMakeSemaphore, unsandbox, updateFiberRefs, updateService, useSpan, using, validate, validateAll, validateFirst, validateWith, void, when, whenEffect, whenFiberRef, whenRef, whileLoop, withClock, withClockScoped, withConcurrency, withConfigProvider, withConfigProviderScoped, withConsole, withConsoleScoped, withEarlyRelease, withFiberRuntime, withLogSpan, withMaxOpsBeforeYield, withMetric, withParentSpan, withRandom, withRandomScoped, withRequestBatching, withRequestCache, withRequestCaching, withRuntimeFlagsPatch, withRuntimeFlagsPatchScoped, withScheduler, withSchedulingPriority, withSpan, withSpanScoped, withTracer, withTracerEnabled, withTracerScoped, withTracerTiming, withUnhandledErrorLogLevel, yieldNow, zip, zipLeft, zipRight, zipWith
 
 // EXTERNAL MODULE: ./node_modules/effect/dist/esm/Function.js
 var Function = __nccwpck_require__(4203);
@@ -93112,19 +93130,23 @@ const setCurrentVersion = version => {
 
 /***/ }),
 
-/***/ 6855:
+/***/ 7985:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "Z": () => (/* reexport */ ChatAnthropic)
+  "Z2": () => (/* reexport */ ChatAnthropic)
 });
 
-// EXTERNAL MODULE: ./node_modules/@anthropic-ai/sdk/build/src/index.js
-var src = __nccwpck_require__(3558);
+// UNUSED EXPORTS: BaseChatModel, ChatOpenAI, SimpleChatModel
+
 // EXTERNAL MODULE: ./node_modules/langchain/dist/chat_models/base.js
 var base = __nccwpck_require__(500);
+// EXTERNAL MODULE: ./node_modules/langchain/dist/chat_models/openai.js
+var openai = __nccwpck_require__(5364);
+// EXTERNAL MODULE: ./node_modules/@anthropic-ai/sdk/build/src/index.js
+var src = __nccwpck_require__(3558);
 // EXTERNAL MODULE: ./node_modules/langchain/dist/schema/index.js
 var schema = __nccwpck_require__(9221);
 ;// CONCATENATED MODULE: ./node_modules/langchain/dist/chat_models/anthropic.js
@@ -93381,7 +93403,13 @@ class ChatAnthropic extends base/* BaseChatModel */.Q {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/langchain/chat_models/anthropic.js
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chat_models/index.js
+/* #__PURE__ */ console.error("[WARN] Importing from 'langchain/chat_models' is deprecated. Import from eg. 'langchain/chat_models/openai' instead. See https://js.langchain.com/docs/getting-started/install#updating-from-0052 for upgrade instructions.");
+
+
+
+
+;// CONCATENATED MODULE: ./node_modules/langchain/chat_models.js
 
 
 /***/ }),
@@ -93599,7 +93627,7 @@ class BaseLanguageModel extends BaseLangChain {
             throw new Error(`Cannot load LLM with model ${_model}`);
         }
         const Cls = {
-            openai: (await __nccwpck_require__.e(/* import() */ 364).then(__nccwpck_require__.bind(__nccwpck_require__, 5364))).ChatOpenAI,
+            openai: (await Promise.resolve(/* import() */).then(__nccwpck_require__.bind(__nccwpck_require__, 5364))).ChatOpenAI,
         }[_type];
         if (Cls === undefined) {
             throw new Error(`Cannot load  LLM with type ${_type}`);
@@ -96272,6 +96300,481 @@ class SimpleChatModel extends (/* unused pure expression or super */ null && (Ba
                 },
             ],
         };
+    }
+}
+
+
+/***/ }),
+
+/***/ 5364:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "ChatOpenAI": () => (/* binding */ ChatOpenAI)
+/* harmony export */ });
+/* harmony import */ var browser_or_node__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(9145);
+/* harmony import */ var openai__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(753);
+/* harmony import */ var _util_axios_fetch_adapter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5255);
+/* harmony import */ var _base_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(500);
+/* harmony import */ var _schema_index_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(9221);
+/* harmony import */ var _base_language_count_tokens_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(6342);
+
+
+
+
+
+
+function messageTypeToOpenAIRole(type) {
+    switch (type) {
+        case "system":
+            return "system";
+        case "ai":
+            return "assistant";
+        case "human":
+            return "user";
+        default:
+            throw new Error(`Unknown message type: ${type}`);
+    }
+}
+function openAIResponseToChatMessage(role, text) {
+    switch (role) {
+        case "user":
+            return new _schema_index_js__WEBPACK_IMPORTED_MODULE_4__/* .HumanChatMessage */ .Z(text);
+        case "assistant":
+            return new _schema_index_js__WEBPACK_IMPORTED_MODULE_4__/* .AIChatMessage */ .Ck(text);
+        case "system":
+            return new _schema_index_js__WEBPACK_IMPORTED_MODULE_4__/* .SystemChatMessage */ .w(text);
+        default:
+            return new _schema_index_js__WEBPACK_IMPORTED_MODULE_4__/* .ChatMessage */ .J(text, role ?? "unknown");
+    }
+}
+/**
+ * Wrapper around OpenAI large language models that use the Chat endpoint.
+ *
+ * To use you should have the `openai` package installed, with the
+ * `OPENAI_API_KEY` environment variable set.
+ *
+ * To use with Azure you should have the `openai` package installed, with the
+ * `AZURE_OPENAI_API_KEY`,
+ * `AZURE_OPENAI_API_INSTANCE_NAME`,
+ * `AZURE_OPENAI_API_DEPLOYMENT_NAME`
+ * and `AZURE_OPENAI_API_VERSION` environment variable set.
+ *
+ * @remarks
+ * Any parameters that are valid to be passed to {@link
+ * https://platform.openai.com/docs/api-reference/chat/create |
+ * `openai.createCompletion`} can be passed through {@link modelKwargs}, even
+ * if not explicitly available on this class.
+ */
+class ChatOpenAI extends _base_js__WEBPACK_IMPORTED_MODULE_3__/* .BaseChatModel */ .Q {
+    get callKeys() {
+        return ["stop", "signal", "timeout", "options"];
+    }
+    constructor(fields, configuration) {
+        super(fields ?? {});
+        Object.defineProperty(this, "temperature", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 1
+        });
+        Object.defineProperty(this, "topP", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 1
+        });
+        Object.defineProperty(this, "frequencyPenalty", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "presencePenalty", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "n", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 1
+        });
+        Object.defineProperty(this, "logitBias", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "modelName", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "gpt-3.5-turbo"
+        });
+        Object.defineProperty(this, "modelKwargs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "stop", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "timeout", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "streaming", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "maxTokens", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "azureOpenAIApiVersion", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "azureOpenAIApiKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "azureOpenAIApiInstanceName", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "azureOpenAIApiDeploymentName", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "client", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "clientConfig", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        const apiKey = fields?.openAIApiKey ??
+            (typeof process !== "undefined"
+                ? // eslint-disable-next-line no-process-env
+                    process.env?.OPENAI_API_KEY
+                : undefined);
+        const azureApiKey = fields?.azureOpenAIApiKey ??
+            (typeof process !== "undefined"
+                ? // eslint-disable-next-line no-process-env
+                    process.env?.AZURE_OPENAI_API_KEY
+                : undefined);
+        if (!azureApiKey && !apiKey) {
+            throw new Error("(Azure) OpenAI API key not found");
+        }
+        const azureApiInstanceName = fields?.azureOpenAIApiInstanceName ??
+            (typeof process !== "undefined"
+                ? // eslint-disable-next-line no-process-env
+                    process.env?.AZURE_OPENAI_API_INSTANCE_NAME
+                : undefined);
+        const azureApiDeploymentName = fields?.azureOpenAIApiDeploymentName ??
+            (typeof process !== "undefined"
+                ? // eslint-disable-next-line no-process-env
+                    process.env?.AZURE_OPENAI_API_DEPLOYMENT_NAME
+                : undefined);
+        const azureApiVersion = fields?.azureOpenAIApiVersion ??
+            (typeof process !== "undefined"
+                ? // eslint-disable-next-line no-process-env
+                    process.env?.AZURE_OPENAI_API_VERSION
+                : undefined);
+        this.modelName = fields?.modelName ?? this.modelName;
+        this.modelKwargs = fields?.modelKwargs ?? {};
+        this.timeout = fields?.timeout;
+        this.temperature = fields?.temperature ?? this.temperature;
+        this.topP = fields?.topP ?? this.topP;
+        this.frequencyPenalty = fields?.frequencyPenalty ?? this.frequencyPenalty;
+        this.presencePenalty = fields?.presencePenalty ?? this.presencePenalty;
+        this.maxTokens = fields?.maxTokens;
+        this.n = fields?.n ?? this.n;
+        this.logitBias = fields?.logitBias;
+        this.stop = fields?.stop;
+        this.streaming = fields?.streaming ?? false;
+        this.azureOpenAIApiVersion = azureApiVersion;
+        this.azureOpenAIApiKey = azureApiKey;
+        this.azureOpenAIApiInstanceName = azureApiInstanceName;
+        this.azureOpenAIApiDeploymentName = azureApiDeploymentName;
+        if (this.streaming && this.n > 1) {
+            throw new Error("Cannot stream results when n > 1");
+        }
+        if (this.azureOpenAIApiKey) {
+            if (!this.azureOpenAIApiInstanceName) {
+                throw new Error("Azure OpenAI API instance name not found");
+            }
+            if (!this.azureOpenAIApiDeploymentName) {
+                throw new Error("Azure OpenAI API deployment name not found");
+            }
+            if (!this.azureOpenAIApiVersion) {
+                throw new Error("Azure OpenAI API version not found");
+            }
+        }
+        this.clientConfig = {
+            apiKey,
+            ...configuration,
+        };
+    }
+    /**
+     * Get the parameters used to invoke the model
+     */
+    invocationParams() {
+        return {
+            model: this.modelName,
+            temperature: this.temperature,
+            top_p: this.topP,
+            frequency_penalty: this.frequencyPenalty,
+            presence_penalty: this.presencePenalty,
+            max_tokens: this.maxTokens === -1 ? undefined : this.maxTokens,
+            n: this.n,
+            logit_bias: this.logitBias,
+            stop: this.stop,
+            stream: this.streaming,
+            ...this.modelKwargs,
+        };
+    }
+    /** @ignore */
+    _identifyingParams() {
+        return {
+            model_name: this.modelName,
+            ...this.invocationParams(),
+            ...this.clientConfig,
+        };
+    }
+    /**
+     * Get the identifying parameters for the model
+     */
+    identifyingParams() {
+        return this._identifyingParams();
+    }
+    /** @ignore */
+    async _generate(messages, options, runManager) {
+        const tokenUsage = {};
+        if (this.stop && options?.stop) {
+            throw new Error("Stop found in input and default params");
+        }
+        const params = this.invocationParams();
+        params.stop = options?.stop ?? params.stop;
+        const messagesMapped = messages.map((message) => ({
+            role: messageTypeToOpenAIRole(message._getType()),
+            content: message.text,
+            name: message.name,
+        }));
+        const data = params.stream
+            ? await new Promise((resolve, reject) => {
+                let response;
+                let rejected = false;
+                let resolved = false;
+                this.completionWithRetry({
+                    ...params,
+                    messages: messagesMapped,
+                }, {
+                    signal: options?.signal,
+                    ...options?.options,
+                    adapter: _util_axios_fetch_adapter_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .Z,
+                    responseType: "stream",
+                    onmessage: (event) => {
+                        if (event.data?.trim?.() === "[DONE]") {
+                            if (resolved) {
+                                return;
+                            }
+                            resolved = true;
+                            resolve(response);
+                        }
+                        else {
+                            const message = JSON.parse(event.data);
+                            // on the first message set the response properties
+                            if (!response) {
+                                response = {
+                                    id: message.id,
+                                    object: message.object,
+                                    created: message.created,
+                                    model: message.model,
+                                    choices: [],
+                                };
+                            }
+                            // on all messages, update choice
+                            for (const part of message.choices) {
+                                if (part != null) {
+                                    let choice = response.choices.find((c) => c.index === part.index);
+                                    if (!choice) {
+                                        choice = {
+                                            index: part.index,
+                                            finish_reason: part.finish_reason ?? undefined,
+                                        };
+                                        response.choices[part.index] = choice;
+                                    }
+                                    if (!choice.message) {
+                                        choice.message = {
+                                            role: part.delta
+                                                ?.role,
+                                            content: part.delta?.content ?? "",
+                                        };
+                                    }
+                                    choice.message.content += part.delta?.content ?? "";
+                                    // TODO this should pass part.index to the callback
+                                    // when that's supported there
+                                    // eslint-disable-next-line no-void
+                                    void runManager?.handleLLMNewToken(part.delta?.content ?? "");
+                                }
+                            }
+                            // when all messages are finished, resolve
+                            if (!resolved &&
+                                message.choices.every((c) => c.finish_reason != null)) {
+                                resolved = true;
+                                resolve(response);
+                            }
+                        }
+                    },
+                }).catch((error) => {
+                    if (!rejected) {
+                        rejected = true;
+                        reject(error);
+                    }
+                });
+            })
+            : await this.completionWithRetry({
+                ...params,
+                messages: messagesMapped,
+            }, {
+                signal: options?.signal,
+                ...options?.options,
+            });
+        const { completion_tokens: completionTokens, prompt_tokens: promptTokens, total_tokens: totalTokens, } = data.usage ?? {};
+        if (completionTokens) {
+            tokenUsage.completionTokens =
+                (tokenUsage.completionTokens ?? 0) + completionTokens;
+        }
+        if (promptTokens) {
+            tokenUsage.promptTokens = (tokenUsage.promptTokens ?? 0) + promptTokens;
+        }
+        if (totalTokens) {
+            tokenUsage.totalTokens = (tokenUsage.totalTokens ?? 0) + totalTokens;
+        }
+        const generations = [];
+        for (const part of data.choices) {
+            const role = part.message?.role ?? undefined;
+            const text = part.message?.content ?? "";
+            generations.push({
+                text,
+                message: openAIResponseToChatMessage(role, text),
+            });
+        }
+        return {
+            generations,
+            llmOutput: { tokenUsage },
+        };
+    }
+    async getNumTokensFromMessages(messages) {
+        let totalCount = 0;
+        let tokensPerMessage = 0;
+        let tokensPerName = 0;
+        // From: https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
+        if ((0,_base_language_count_tokens_js__WEBPACK_IMPORTED_MODULE_5__/* .getModelNameForTiktoken */ ._i)(this.modelName) === "gpt-3.5-turbo") {
+            tokensPerMessage = 4;
+            tokensPerName = -1;
+        }
+        else if ((0,_base_language_count_tokens_js__WEBPACK_IMPORTED_MODULE_5__/* .getModelNameForTiktoken */ ._i)(this.modelName).startsWith("gpt-4")) {
+            tokensPerMessage = 3;
+            tokensPerName = 1;
+        }
+        const countPerMessage = await Promise.all(messages.map(async (message) => {
+            const textCount = await this.getNumTokens(message.text);
+            const roleCount = await this.getNumTokens(messageTypeToOpenAIRole(message._getType()));
+            const nameCount = message.name !== undefined
+                ? tokensPerName + (await this.getNumTokens(message.name))
+                : 0;
+            const count = textCount + tokensPerMessage + roleCount + nameCount;
+            totalCount += count;
+            return count;
+        }));
+        totalCount += 3; // every reply is primed with <|start|>assistant<|message|>
+        return { totalCount, countPerMessage };
+    }
+    /** @ignore */
+    async completionWithRetry(request, options) {
+        if (!this.client) {
+            const endpoint = this.azureOpenAIApiKey
+                ? `https://${this.azureOpenAIApiInstanceName}.openai.azure.com/openai/deployments/${this.azureOpenAIApiDeploymentName}`
+                : this.clientConfig.basePath;
+            const clientConfig = new openai__WEBPACK_IMPORTED_MODULE_1__.Configuration({
+                ...this.clientConfig,
+                basePath: endpoint,
+                baseOptions: {
+                    timeout: this.timeout,
+                    ...this.clientConfig.baseOptions,
+                },
+            });
+            this.client = new openai__WEBPACK_IMPORTED_MODULE_1__.OpenAIApi(clientConfig);
+        }
+        const axiosOptions = {
+            adapter: browser_or_node__WEBPACK_IMPORTED_MODULE_0__/* .isNode */ .UG ? undefined : _util_axios_fetch_adapter_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .Z,
+            ...this.clientConfig.baseOptions,
+            ...options,
+        };
+        if (this.azureOpenAIApiKey) {
+            axiosOptions.headers = {
+                "api-key": this.azureOpenAIApiKey,
+                ...axiosOptions.headers,
+            };
+            axiosOptions.params = {
+                "api-version": this.azureOpenAIApiVersion,
+                ...axiosOptions.params,
+            };
+        }
+        return this.caller
+            .call(this.client.createChatCompletion.bind(this.client), request, axiosOptions)
+            .then((res) => res.data);
+    }
+    _llmType() {
+        return "openai";
+    }
+    /** @ignore */
+    _combineLLMOutput(...llmOutputs) {
+        return llmOutputs.reduce((acc, llmOutput) => {
+            if (llmOutput && llmOutput.tokenUsage) {
+                acc.tokenUsage.completionTokens +=
+                    llmOutput.tokenUsage.completionTokens ?? 0;
+                acc.tokenUsage.promptTokens += llmOutput.tokenUsage.promptTokens ?? 0;
+                acc.tokenUsage.totalTokens += llmOutput.tokenUsage.totalTokens ?? 0;
+            }
+            return acc;
+        }, {
+            tokenUsage: {
+                completionTokens: 0,
+                promptTokens: 0,
+                totalTokens: 0,
+            },
+        });
     }
 }
 
