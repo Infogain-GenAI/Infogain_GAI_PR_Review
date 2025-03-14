@@ -11,6 +11,8 @@ import type { ChainValues } from 'langchain/schema'
 import parseDiff from 'parse-diff'
 import { NoSuchElementException, UnknownException } from 'effect/Cause'
 import { constant } from 'effect/Function'
+import { ChatAnthropic } from 'langchain/chat_models'
+
 
 export type PullRequestFileResponse = RestEndpointMethodTypes['pulls']['listFiles']['response']
 
@@ -141,7 +143,7 @@ export interface CodeReview {
 export const CodeReview = Context.GenericTag<CodeReview>('CodeReview')
 
 export class CodeReviewClass implements CodeReview {
-  private llm: BaseChatModel
+  private llm: BaseChatModel  //changed
   private chatPrompt = ChatPromptTemplate.fromPromptMessages([
     SystemMessagePromptTemplate.fromTemplate(
       systemPrompt
@@ -152,13 +154,18 @@ export class CodeReviewClass implements CodeReview {
   private chain: LLMChain<string>
 
   constructor(llm: BaseChatModel) {
+    if (!(llm instanceof ChatAnthropic)) {
+      throw new Error('LLM must be an instance of ChatAnthropic');
+    }
+    llm.maxTokensToSample = 8192
     this.llm = llm
     this.chain = new LLMChain({
       prompt: this.chatPrompt,
-      llm: this.llm
+      llm:llm
     })
   }
 
+  //original
   codeReviewFor = (
     file: PullRequestFile
   ): Effect.Effect<ChainValues, NoSuchElementException | UnknownException, DetectLanguage> =>
@@ -171,7 +178,51 @@ export class CodeReviewClass implements CodeReview {
         )
       )
     )
+  // codeReviewFor = (
+  //   file: PullRequestFile
+  // ): Effect.Effect<ChainValues, NoSuchElementException | UnknownException, DetectLanguage> =>
+  //   DetectLanguage.pipe(
+  //     Effect.flatMap(DetectLanguage => DetectLanguage.detectLanguage(file.filename)),
+  //     Effect.flatMap(lang =>
+  //       Effect.retry(
+  //         Effect.tryPromise(async () => {
+  //           try {
+  //             // Prepare request payload in JSON format
+  //             const requestPayload = {
+  //               messages: [
+  //                 {
+  //                   role: "system",
+  //                   content: systemPrompt
+  //                 },
+  //                 {
+  //                   role: "user",
+  //                   content: JSON.stringify({
+  //                     language: lang,
+  //                     diff: file.patch,
+  //                     filename: file.filename
+  //                   })
+  //                 }
+  //               ],
+  //               stop: ["\n\nHuman:", "\n\nAssistant:"],
+  //               max_tokens: 4000,
+  //               temperature: 0.7
+  //             }
 
+  //             const result = await this.chain.call(requestPayload)
+
+  //             // Log the response for debugging
+  //             core.debug(`API Response: ${JSON.stringify(result)}`)
+
+  //             return result
+  //           } catch (error) {
+  //             core.error(`Error in code review: ${error}`)
+  //             throw error
+  //           }
+  //         }),
+  //         exponentialBackoffWithJitter(3)
+  //       )
+  //     )
+  //   )
 
 }
 

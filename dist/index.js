@@ -49612,7 +49612,10 @@ class MultiRetrievalQAChain extends (/* unused pure expression or super */ null 
 
 ;// CONCATENATED MODULE: ./node_modules/langchain/chains.js
 
+// EXTERNAL MODULE: ./node_modules/langchain/chat_models.js + 2 modules
+var chat_models = __nccwpck_require__(7985);
 ;// CONCATENATED MODULE: ./src/helpers.ts
+
 
 
 
@@ -49649,19 +49652,24 @@ const getFileExtension = (filename) => {
 };
 const CodeReview = Context/* GenericTag */.hV('CodeReview');
 class CodeReviewClass {
-    llm;
+    llm; //changed
     chatPrompt = prompts/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages([
         prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(systemPrompt),
         prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(instructionsPrompt)
     ]);
     chain;
     constructor(llm) {
+        if (!(llm instanceof chat_models/* ChatAnthropic */.Z2)) {
+            throw new Error('LLM must be an instance of ChatAnthropic');
+        }
+        llm.maxTokensToSample = 8192;
         this.llm = llm;
         this.chain = new llm_chain.LLMChain({
             prompt: this.chatPrompt,
-            llm: this.llm
+            llm: llm
         });
     }
+    //original
     codeReviewFor = (file) => DetectLanguage.pipe(esm_Effect/* flatMap */.VSD(DetectLanguage => DetectLanguage.detectLanguage(file.filename)), esm_Effect/* flatMap */.VSD(lang => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => this.chain.call({ lang, diff: file.patch })), exponentialBackoffWithJitter(3))));
 }
 const exponentialBackoffWithJitter = (retries = 3) => recurs(retries).pipe(compose(exponential(1000, 2)), jittered);
