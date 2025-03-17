@@ -11,7 +11,7 @@ import type { ChainValues } from 'langchain/schema'
 import parseDiff from 'parse-diff'
 import { NoSuchElementException, UnknownException } from 'effect/Cause'
 import { constant } from 'effect/Function'
-import { ChatAnthropic } from '@langchain/anthropic'
+import { ChatAnthropic } from 'langchain/chat_models/anthropic'
 
 
 export type PullRequestFileResponse = RestEndpointMethodTypes['pulls']['listFiles']['response']
