@@ -6,13 +6,17 @@ import {systemPrompt,instructionsPrompt,extensionToLanguageMap} from './constant
 import { Effect, Context, Option, Layer, Schedule } from 'effect'
 import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from 'langchain/prompts'
 import {LLMChain} from 'langchain/chains'
-import { BaseChatModel } from 'langchain/chat_models'
-import type { ChainValues } from 'langchain/schema'
-import parseDiff from 'parse-diff'
+//import { BaseChatModel } from 'langchain/chat_models'
+import type { BasePromptValue, ChainValues, LLMResult } from 'langchain/schema'
+//import parseDiff from 'parse-diff'
 import { NoSuchElementException, UnknownException } from 'effect/Cause'
-import { constant } from 'effect/Function'
-import { ChatAnthropic } from 'langchain/chat_models/anthropic'
-
+//import { constant } from 'effect/Function'
+import { ChatAnthropic, ChatAnthropicCallOptions} from '@langchain/anthropic'
+import { BaseChatModel } from '@langchain/core/language_models/chat_models'
+import { BaseLanguageModel } from 'langchain/base_language'
+import { Callbacks } from 'langchain/callbacks'
+import { BaseLanguageModelInput } from 'node_modules/@langchain/core/dist/language_models/base.js'
+import { AIMessageChunk } from 'node_modules/@langchain/core/dist/messages/ai.js'
 
 export type PullRequestFileResponse = RestEndpointMethodTypes['pulls']['listFiles']['response']
 
@@ -20,6 +24,7 @@ export type PullRequestFile = ArrElement<PullRequestFileResponse['data']>
 type CreateReviewCommentRequest = RestEndpointMethodTypes['pulls']['createReviewComment']['parameters']
 
 type CreateReviewRequest = RestEndpointMethodTypes['pulls']['createReview']['parameters']
+
 
 export interface PullRequest {
   getFilesForReview: (
@@ -105,7 +110,6 @@ export class PullRequestClass implements PullRequest {
 }
 
 
-
 const LanguageDetection = Effect.sync(() => {
   return {
     detectLanguage: (filename: string): Option.Option<Language> => {
@@ -132,6 +136,27 @@ type LanguageKey = keyof typeof extensionToLanguageMap
 export type Language = (typeof extensionToLanguageMap)[LanguageKey]
 
 
+export class ChatAnthropicWrapper extends BaseLanguageModel {
+  generatePrompt(promptValues: BasePromptValue[], options?: string[] | this['CallOptions'] | undefined, callbacks?: Callbacks): Promise<LLMResult> {
+    throw new Error('Method not implemented.')
+  }
+  _modelType(): string {
+    throw new Error('Method not implemented.')
+  }
+  _llmType(): string {
+    throw new Error('Method not implemented.')
+  }
+  private anthropic: ChatAnthropic;
+
+  constructor(anthropic: ChatAnthropic) {
+    super({});
+    this.anthropic = anthropic;
+  }
+
+  async call(input: string | BaseLanguageModelInput, options?: ChatAnthropicCallOptions): Promise<AIMessageChunk> {
+    return this.anthropic.invoke(input, options);
+  }
+}
 
 export interface CodeReview {
   codeReviewFor(
@@ -143,7 +168,7 @@ export interface CodeReview {
 export const CodeReview = Context.GenericTag<CodeReview>('CodeReview')
 
 export class CodeReviewClass implements CodeReview {
-  private llm: BaseChatModel  //changed
+  private llm: BaseLanguageModel
   private chatPrompt = ChatPromptTemplate.fromPromptMessages([
     SystemMessagePromptTemplate.fromTemplate(
       systemPrompt
@@ -153,17 +178,24 @@ export class CodeReviewClass implements CodeReview {
 
   private chain: LLMChain<string>
 
-  constructor(llm: BaseChatModel) {
+  constructor(llm: BaseLanguageModel) {
     if (!(llm instanceof ChatAnthropic)) {
       throw new Error('LLM must be an instance of ChatAnthropic');
     }
-    //llm.maxTokensToSample = 8192
-    this.llm = llm
-    this.chain = new LLMChain({
-      prompt: this.chatPrompt,
-      llm:llm
-    })
+
+    // Wrap ChatAnthropic with the wrapper
+    this.llm = new ChatAnthropicWrapper(llm);
+    this.chain = new LLMChain({ prompt: this.chatPrompt, llm: this.llm });
   }
+  // original
+  // constructor(llm: BaseChatModel) {
+  //   if (!(llm instanceof ChatAnthropic)) {
+  //     throw new Error('LLM must be an instance of ChatAnthropic');
+  //   }
+  //   //llm.maxTokensToSample = 8192
+  //   this.llm = llm
+  //   this.chain = new LLMChain({ prompt: this.chatPrompt, llm: this.llm }) //changed
+  // }
 
   //original
   codeReviewFor = (
