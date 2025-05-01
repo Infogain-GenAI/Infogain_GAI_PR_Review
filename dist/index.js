@@ -49771,13 +49771,17 @@ const fetchInstructionsPrompt = async (octokit, owner, repo, filePath) => {
         repo,
         path: filePath,
     });
+    // Log the response structure for debugging
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Response data: ${JSON.stringify(response.data)}`);
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`${filePath}`);
     if (response.data && 'content' in response.data) {
         const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Fetched instructionsPrompt from ${filePath}`);
+        //core.info(`Fetched instructionsPrompt from ${filePath}:`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(content); // Log the actual content
         return content;
     }
     else {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`Unable to fetch content from ${filePath}`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`Unable to fetch content from ${filePath}. Response data: ${JSON.stringify(response.data)}`);
         return '';
     }
 };

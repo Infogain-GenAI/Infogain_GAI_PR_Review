@@ -106,22 +106,32 @@ export const run = async (): Promise<void> => {
 }
 
 // Function to fetch instructionsPrompt from a GitHub file
-const fetchInstructionsPrompt = async (octokit: ReturnType<typeof github.getOctokit>, owner: string, repo: string, filePath: string): Promise<string> => {
-      const response = await octokit.rest.repos.getContent({
+const fetchInstructionsPrompt = async (
+    octokit: ReturnType<typeof github.getOctokit>,
+    owner: string,
+    repo: string,
+    filePath: string
+): Promise<string> => {
+        const response = await octokit.rest.repos.getContent({
             owner,
             repo,
             path: filePath,
-        })
+        });
+
+        // Log the response structure for debugging
+        core.info(`Response data: ${JSON.stringify(response.data)}`);
+        core.info(`${filePath}`);
 
         if (response.data && 'content' in response.data) {
-            const content = Buffer.from(response.data.content, 'base64').toString('utf-8')
-            core.info(`Fetched instructionsPrompt from ${filePath}`)
-            return content
+            const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
+            //core.info(`Fetched instructionsPrompt from ${filePath}:`);
+            core.info(content); // Log the actual content
+            return content;
         } else {
-            core.setFailed(`Unable to fetch content from ${filePath}`)
-            return ''
+            core.setFailed(`Unable to fetch content from ${filePath}. Response data: ${JSON.stringify(response.data)}`);
+            return '';
         }
-}
+};
 
 const init = (model: BaseChatModel, githubToken: string, instructionsPrompt: string) => {
     const CodeReviewLive = Layer.effect(
