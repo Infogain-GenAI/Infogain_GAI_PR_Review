@@ -143,14 +143,15 @@ export const CodeReview = Context.GenericTag<CodeReview>('CodeReview')
 export class CodeReviewClass implements CodeReview {
     private llm: BaseChatModel
     private chatPrompt: ChatPromptTemplate
-
     private chain: LLMChain<string>
+    private instructionsPrompt: string
 
     constructor(llm: BaseChatModel, instructionsPrompt: string) {
         this.llm = llm
+        this.instructionsPrompt = instructionsPrompt
         this.chatPrompt = ChatPromptTemplate.fromPromptMessages([
             SystemMessagePromptTemplate.fromTemplate(systemPrompt),
-            HumanMessagePromptTemplate.fromTemplate(`${instructionsPromptPrefix}${instructionsPrompt}${instructionsPromptSuffix}`)
+            HumanMessagePromptTemplate.fromTemplate(`${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`)
         ])
         this.chain = new LLMChain({
             prompt: this.chatPrompt,

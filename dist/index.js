@@ -49650,11 +49650,13 @@ class CodeReviewClass {
     llm;
     chatPrompt;
     chain;
+    instructionsPrompt;
     constructor(llm, instructionsPrompt) {
         this.llm = llm;
+        this.instructionsPrompt = instructionsPrompt;
         this.chatPrompt = prompts/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages([
             prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(systemPrompt),
-            prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(`${instructionsPromptPrefix}${instructionsPrompt}${instructionsPromptSuffix}`)
+            prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(`${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`)
         ]);
         this.chain = new llm_chain.LLMChain({
             prompt: this.chatPrompt,
