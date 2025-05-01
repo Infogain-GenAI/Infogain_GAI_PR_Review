@@ -2,7 +2,7 @@ import { GitHub } from '@actions/github/lib/utils.js'
 import type { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods/dist-types/generated/parameters-and-response-types.js'
 import { minimatch } from 'minimatch'
 import * as core from '@actions/core'
-import {systemPrompt,instructionsPrompt,extensionToLanguageMap} from './constants.js'
+import {systemPrompt,extensionToLanguageMap} from './constants.js'
 import { Effect, Context, Option, Layer, Schedule } from 'effect'
 import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from 'langchain/prompts'
 import {LLMChain} from 'langchain/chains'
@@ -135,53 +135,49 @@ export interface CodeReview {
   codeReviewFor(
     file: PullRequestFile
   ): Effect.Effect<ChainValues, NoSuchElementException | UnknownException, DetectLanguage>
-  
+
 }
 
 export const CodeReview = Context.GenericTag<CodeReview>('CodeReview')
 
 export class CodeReviewClass implements CodeReview {
-  private llm: BaseChatModel
-  private chatPrompt = ChatPromptTemplate.fromPromptMessages([
-    SystemMessagePromptTemplate.fromTemplate(
-      systemPrompt
-    ),
-    HumanMessagePromptTemplate.fromTemplate(instructionsPrompt)
-  ])
+    private llm: BaseChatModel
+    private chatPrompt: ChatPromptTemplate
 
-  private chain: LLMChain<string>
+    private chain: LLMChain<string>
 
-  constructor(llm: BaseChatModel) {
-    this.llm = llm
-    this.chain = new LLMChain({
-      prompt: this.chatPrompt,
-      llm: this.llm
-    })
-  }
+    constructor(llm: BaseChatModel, instructionsPrompt: string) {
+        this.llm = llm
+        this.chatPrompt = ChatPromptTemplate.fromPromptMessages([
+            SystemMessagePromptTemplate.fromTemplate(systemPrompt),
+            HumanMessagePromptTemplate.fromTemplate(instructionsPrompt)
+        ])
+        this.chain = new LLMChain({
+            prompt: this.chatPrompt,
+            llm: this.llm
+        })
+    }
 
-  codeReviewFor = (
-    file: PullRequestFile
-  ): Effect.Effect<ChainValues, NoSuchElementException | UnknownException, DetectLanguage> =>
-    DetectLanguage.pipe(
-      Effect.flatMap(DetectLanguage => DetectLanguage.detectLanguage(file.filename)),
-      Effect.flatMap(lang =>
-        Effect.retry(
-          Effect.tryPromise(() => this.chain.call({ lang, diff: file.patch })),
-          exponentialBackoffWithJitter(3)
+    codeReviewFor = (
+        file: PullRequestFile
+    ): Effect.Effect<ChainValues, NoSuchElementException | UnknownException, DetectLanguage> =>
+        DetectLanguage.pipe(
+            Effect.flatMap(DetectLanguage => DetectLanguage.detectLanguage(file.filename)),
+            Effect.flatMap(lang =>
+                Effect.retry(
+                    Effect.tryPromise(() => this.chain.call({ lang, diff: file.patch })),
+                    exponentialBackoffWithJitter(3)
+                )
+            )
         )
-      )
-    )
-
-  
 }
 
 export type ArrElement<ArrType> = ArrType extends readonly (infer ElementType)[] ? ElementType : never
 
 export const exponentialBackoffWithJitter = (retries = 3) =>
     Schedule.recurs(retries).pipe(Schedule.compose(Schedule.exponential(1000, 2)), Schedule.jittered)
-  
+
   const RETRIES = 3
-  
+
   export const retryWithBackoff = <A, E, R>(effect: Effect.Effect<A, E, R>): Effect.Effect<A, E, R> =>
     Effect.retry(effect, exponentialBackoffWithJitter(RETRIES))
-  

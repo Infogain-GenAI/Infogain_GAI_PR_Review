@@ -33,6 +33,9 @@ inputs:
   azure_openai_api_version:
     description: 'Azure OpenAI API Version'
     required: true
+  instructions_file_path:
+    description: 'Path to the instructions file'
+    required: true
 
 runs:
   using: 'node20'
