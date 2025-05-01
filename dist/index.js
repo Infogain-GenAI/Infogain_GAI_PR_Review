@@ -49774,12 +49774,12 @@ const fetchInstructionsPrompt = async (octokit, owner, repo, filePath) => {
         path: filePath,
     });
     // Log the response structure for debugging
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Response data: ${JSON.stringify(response.data)}`);
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`${filePath}`);
+    //core.info(`Response data: ${JSON.stringify(response.data)}`);
+    //core.info(`${filePath}`);
     if (response.data && 'content' in response.data) {
         const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
         //core.info(`Fetched instructionsPrompt from ${filePath}:`);
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(content); // Log the actual content
+        //core.info(content); // Log the actual content
         return content;
     }
     else {

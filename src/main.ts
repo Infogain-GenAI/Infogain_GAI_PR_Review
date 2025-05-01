@@ -119,13 +119,13 @@ const fetchInstructionsPrompt = async (
         });
 
         // Log the response structure for debugging
-        core.info(`Response data: ${JSON.stringify(response.data)}`);
-        core.info(`${filePath}`);
+        //core.info(`Response data: ${JSON.stringify(response.data)}`);
+        //core.info(`${filePath}`);
 
         if (response.data && 'content' in response.data) {
             const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
             //core.info(`Fetched instructionsPrompt from ${filePath}:`);
-            core.info(content); // Log the actual content
+            //core.info(content); // Log the actual content
             return content;
         } else {
             core.setFailed(`Unable to fetch content from ${filePath}. Response data: ${JSON.stringify(response.data)}`);
