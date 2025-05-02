@@ -21,18 +21,6 @@ inputs:
     description: "Provide a wildcard expression to exclude files from code review. For example, `*.md` will exclude all markdown files. Multiple expressions are supported via commas, eg `*.js, *.cjs`"
     required: false
     default: ""
-  azure_openai_api_key:
-    description: 'Azure OpenAI API key'
-    required: true
-  azure_openai_api_instance_name:
-    description: 'Azure OpenAI API Instance Name'
-    required: true
-  azure_openai_api_deployment_name:
-    description: 'Azure OpenAI API Deployment Name'
-    required: true
-  azure_openai_api_version:
-    description: 'Azure OpenAI API Version'
-    required: true
   instructions_file_path:
     description: 'Path to the instructions file'
     required: true

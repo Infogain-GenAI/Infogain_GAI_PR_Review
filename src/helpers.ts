@@ -151,10 +151,9 @@ export class CodeReviewClass implements CodeReview {
         this.instructionsPrompt = instructionsPrompt
         this.chatPrompt = ChatPromptTemplate.fromPromptMessages([
             SystemMessagePromptTemplate.fromTemplate(systemPrompt),
-            HumanMessagePromptTemplate.fromTemplate(instructionsPromptPrefix+this.instructionsPrompt+instructionsPromptSuffix)
+            HumanMessagePromptTemplate.fromTemplate(`${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`)
         ])
-        core.info(`Instructions Prompt: ${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`)
-        core.info(`Chat Prompt: ${this.chatPrompt}`)
+        //core.info(`Instructions Prompt: ${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`)
         this.chain = new LLMChain({
             prompt: this.chatPrompt,
             llm: this.llm

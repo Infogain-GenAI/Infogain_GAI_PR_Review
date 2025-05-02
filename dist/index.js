@@ -49656,10 +49656,9 @@ class CodeReviewClass {
         this.instructionsPrompt = instructionsPrompt;
         this.chatPrompt = prompts/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages([
             prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(systemPrompt),
-            prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(instructionsPromptPrefix + this.instructionsPrompt + instructionsPromptSuffix)
+            prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(`${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`)
         ]);
-        core.info(`Instructions Prompt: ${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`);
-        core.info(`Chat Prompt: ${this.chatPrompt}`);
+        //core.info(`Instructions Prompt: ${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`)
         this.chain = new llm_chain.LLMChain({
             prompt: this.chatPrompt,
             llm: this.llm
