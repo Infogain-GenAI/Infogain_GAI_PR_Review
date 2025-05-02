@@ -19,6 +19,11 @@ export const run = async (): Promise<void> => {
     const temperature = parseInt(core.getInput('model_temperature'))
     const instructionsFilePath = core.getInput('instructions_file_path') // GitHub secret for the file path
 
+    if (!githubToken) {
+        core.setFailed('GitHub token is missing. Please provide a valid token.')
+        return
+    }
+
     const context = github.context
     const { owner, repo } = context.repo
 

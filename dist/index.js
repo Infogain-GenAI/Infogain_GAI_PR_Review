@@ -49730,6 +49730,10 @@ const run = async () => {
     const modelName = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('model_name');
     const temperature = parseInt(_actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('model_temperature'));
     const instructionsFilePath = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('instructions_file_path'); // GitHub secret for the file path
+    if (!githubToken) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed('GitHub token is missing. Please provide a valid token.');
+        return;
+    }
     const context = _actions_github__WEBPACK_IMPORTED_MODULE_2__.context;
     const { owner, repo } = context.repo;
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken);
