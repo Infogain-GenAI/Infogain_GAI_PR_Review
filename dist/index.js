@@ -49658,6 +49658,8 @@ class CodeReviewClass {
             prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(systemPrompt),
             prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(instructionsPromptPrefix + this.instructionsPrompt + instructionsPromptSuffix)
         ]);
+        core.info(`Instructions Prompt: ${this.instructionsPrompt}`);
+        core.info(`Chat Prompt: ${this.chatPrompt}`);
         this.chain = new llm_chain.LLMChain({
             prompt: this.chatPrompt,
             llm: this.llm
