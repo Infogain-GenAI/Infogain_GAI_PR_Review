@@ -49757,6 +49757,7 @@ const run = async () => {
         openAIApiKey,
         modelName,
     });
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("hello;" + instructionsPrompt);
     const MainLive = init(model, githubToken, instructionsPrompt);
     const program = effect__WEBPACK_IMPORTED_MODULE_6__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_6__/* .when */ .gx('pull_request', () => {
         const excludeFilePatterns = (0,effect__WEBPACK_IMPORTED_MODULE_7__/* .pipe */ .zG)(effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => _actions_github__WEBPACK_IMPORTED_MODULE_2__.context.payload), effect__WEBPACK_IMPORTED_MODULE_8__/* .tap */ .bwX(pullRequestPayload => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => {

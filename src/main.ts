@@ -37,7 +37,7 @@ export const run = async (): Promise<void> => {
         openAIApiKey,
         modelName,
     })
-
+    core.info("hello;"+instructionsPrompt)
     const MainLive = init(model, githubToken, instructionsPrompt)
 
     const program = Match.value(context.eventName).pipe(
