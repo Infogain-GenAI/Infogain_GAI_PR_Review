@@ -30,8 +30,8 @@ export const run = async (): Promise<void> => {
     const octokit = github.getOctokit(githubToken)
 
     // Fetch the instructionsPrompt from the GitHub file
-    const instructionsPrompt = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath)
-
+    const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath)
+    const instructionsPrompt = instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix
     const model: BaseChatModel = new ChatOpenAI({
         temperature,
         openAIApiKey,

@@ -44058,7 +44058,89 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 4237:
+/***/ 9042:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "G0": () => (/* binding */ extensionToLanguageMap),
+/* harmony export */   "UT": () => (/* binding */ systemPrompt),
+/* harmony export */   "_r": () => (/* binding */ instructionsPromptSuffix),
+/* harmony export */   "jk": () => (/* binding */ instructionsPromptPrefix)
+/* harmony export */ });
+const extensionToLanguageMap = {
+    js: 'javascript',
+    ts: 'typescript',
+    py: 'python',
+    go: 'go',
+    rb: 'ruby',
+    cs: 'csharp',
+    java: 'java',
+    php: 'php',
+    rs: 'rust',
+    swift: 'swift',
+    cpp: 'cpp',
+    c: 'c',
+    m: 'objective-c',
+    mm: 'objective-cpp',
+    h: 'c',
+    hpp: 'cpp',
+    hxx: 'cpp',
+    hh: 'cpp',
+    cc: 'cpp',
+    cxx: 'cpp',
+    html: 'html',
+    css: 'css',
+    scss: 'scss',
+    less: 'less',
+    sass: 'sass',
+    styl: 'stylus',
+    vue: 'vue',
+    svelte: 'svelte',
+    jsx: 'jsx',
+    tsx: 'tsx',
+    md: 'markdown',
+    json: 'json',
+    yaml: 'yaml',
+    yml: 'yaml',
+    xml: 'xml',
+    toml: 'toml',
+    sh: 'shell',
+    clj: 'clojure',
+    cljs: 'clojure',
+    cljc: 'clojure',
+    edn: 'clojure',
+    lua: 'lua',
+    sql: 'sql',
+    r: 'r',
+    kt: 'kotlin',
+    kts: 'kotlin',
+    ktm: 'kotlin',
+    ktx: 'kotlin',
+    gradle: 'groovy',
+    tf: 'terraform',
+    scala: 'scala',
+    sc: 'scala',
+    txt: "",
+    bat: "",
+    ps1: "",
+    psm1: "",
+    psd1: "",
+    ps1xml: "",
+    pssc: "",
+    other: ""
+};
+const systemPrompt = 'Act as an empathetic software engineer who is an expert in designing and developing React based frontend softwares based on Redux Middleware and Saga framework and adhering to best practices of software architecture.';
+const instructionsPromptPrefix = `Your task is to review a Pull Request. You will receive a git diff.
+Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities. Check it adheres to the following coding standards and guidelines:`;
+const instructionsPromptSuffix = `Write your reply and examples in GitHub Markdown format.
+The programming language in the git diff is {lang}.
+    git diff to review
+    {diff}`;
+
+
+/***/ }),
+
+/***/ 4584:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -45841,77 +45923,8 @@ minimatch.unescape = unescape_unescape;
 //# sourceMappingURL=index.js.map
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
-;// CONCATENATED MODULE: ./src/constants.ts
-const extensionToLanguageMap = {
-    js: 'javascript',
-    ts: 'typescript',
-    py: 'python',
-    go: 'go',
-    rb: 'ruby',
-    cs: 'csharp',
-    java: 'java',
-    php: 'php',
-    rs: 'rust',
-    swift: 'swift',
-    cpp: 'cpp',
-    c: 'c',
-    m: 'objective-c',
-    mm: 'objective-cpp',
-    h: 'c',
-    hpp: 'cpp',
-    hxx: 'cpp',
-    hh: 'cpp',
-    cc: 'cpp',
-    cxx: 'cpp',
-    html: 'html',
-    css: 'css',
-    scss: 'scss',
-    less: 'less',
-    sass: 'sass',
-    styl: 'stylus',
-    vue: 'vue',
-    svelte: 'svelte',
-    jsx: 'jsx',
-    tsx: 'tsx',
-    md: 'markdown',
-    json: 'json',
-    yaml: 'yaml',
-    yml: 'yaml',
-    xml: 'xml',
-    toml: 'toml',
-    sh: 'shell',
-    clj: 'clojure',
-    cljs: 'clojure',
-    cljc: 'clojure',
-    edn: 'clojure',
-    lua: 'lua',
-    sql: 'sql',
-    r: 'r',
-    kt: 'kotlin',
-    kts: 'kotlin',
-    ktm: 'kotlin',
-    ktx: 'kotlin',
-    gradle: 'groovy',
-    tf: 'terraform',
-    scala: 'scala',
-    sc: 'scala',
-    txt: "",
-    bat: "",
-    ps1: "",
-    psm1: "",
-    psd1: "",
-    ps1xml: "",
-    pssc: "",
-    other: ""
-};
-const systemPrompt = 'Act as an empathetic software engineer who is an expert in designing and developing React based frontend softwares based on Redux Middleware and Saga framework and adhering to best practices of software architecture.';
-const instructionsPromptPrefix = `Your task is to review a Pull Request. You will receive a git diff.
-Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities. Check it adheres to the following coding standards and guidelines:`;
-const instructionsPromptSuffix = `Write your reply and examples in GitHub Markdown format.
-The programming language in the git diff is {lang}.
-    git diff to review
-    {diff}`;
-
+// EXTERNAL MODULE: ./src/constants.ts
+var constants = __nccwpck_require__(9042);
 // EXTERNAL MODULE: ./node_modules/effect/dist/esm/Context.js
 var Context = __nccwpck_require__(3440);
 // EXTERNAL MODULE: ./node_modules/effect/dist/esm/Effect.js + 6 modules
@@ -49634,7 +49647,7 @@ const LanguageDetection = esm_Effect/* sync */.Z_X(() => {
     return {
         detectLanguage: (filename) => {
             const extension = getFileExtension(filename);
-            return Option/* fromNullable */.ij(extensionToLanguageMap[extension]);
+            return Option/* fromNullable */.ij(constants/* extensionToLanguageMap */.G0[extension]);
         }
     };
 });
@@ -49650,15 +49663,13 @@ class CodeReviewClass {
     llm;
     chatPrompt;
     chain;
-    instructionsPrompt;
     constructor(llm, instructionsPrompt) {
         this.llm = llm;
-        this.instructionsPrompt = instructionsPrompt;
         this.chatPrompt = prompts/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages([
-            prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(systemPrompt),
-            prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(`${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`)
+            prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(constants/* systemPrompt */.UT),
+            prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(instructionsPrompt)
         ]);
-        //core.info(`Instructions Prompt: ${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`)
+        core.info(`Instructions Prompt: ${instructionsPrompt}`);
         this.chain = new llm_chain.LLMChain({
             prompt: this.chatPrompt,
             llm: this.llm
@@ -49706,12 +49717,14 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var langchain_chat_models__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9435);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(9374);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(6795);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(2732);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(6798);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(8933);
-/* harmony import */ var _helpers_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4237);
+/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(9374);
+/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(6795);
+/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(2732);
+/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(6798);
+/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_10__ = __nccwpck_require__(8933);
+/* harmony import */ var _helpers_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4584);
+/* harmony import */ var _constants_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(9042);
+
 
 
 
@@ -49737,21 +49750,22 @@ const run = async () => {
     const { owner, repo } = context.repo;
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken);
     // Fetch the instructionsPrompt from the GitHub file
-    const instructionsPrompt = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
+    const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
+    const instructionsPrompt = _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk + instructionsPromptMid + _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r;
     const model = new langchain_chat_models__WEBPACK_IMPORTED_MODULE_3__/* .ChatOpenAI */ .z7({
         temperature,
         openAIApiKey,
         modelName,
     });
     const MainLive = init(model, githubToken, instructionsPrompt);
-    const program = effect__WEBPACK_IMPORTED_MODULE_5__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_5__/* .when */ .gx('pull_request', () => {
-        const excludeFilePatterns = (0,effect__WEBPACK_IMPORTED_MODULE_6__/* .pipe */ .zG)(effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => _actions_github__WEBPACK_IMPORTED_MODULE_2__.context.payload), effect__WEBPACK_IMPORTED_MODULE_7__/* .tap */ .bwX(pullRequestPayload => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => {
+    const program = effect__WEBPACK_IMPORTED_MODULE_6__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_6__/* .when */ .gx('pull_request', () => {
+        const excludeFilePatterns = (0,effect__WEBPACK_IMPORTED_MODULE_7__/* .pipe */ .zG)(effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => _actions_github__WEBPACK_IMPORTED_MODULE_2__.context.payload), effect__WEBPACK_IMPORTED_MODULE_8__/* .tap */ .bwX(pullRequestPayload => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => {
             _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`repoName: ${repo} pull_number: ${context.payload.number} owner: ${owner} sha: ${pullRequestPayload.pull_request.head.sha}`);
-        })), effect__WEBPACK_IMPORTED_MODULE_7__/* .map */ .UID(() => _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('exclude_files')
+        })), effect__WEBPACK_IMPORTED_MODULE_8__/* .map */ .UID(() => _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('exclude_files')
             .split(',')
             .map(_ => _.trim())));
-        const a = excludeFilePatterns.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(filePattens => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(PullRequest => PullRequest.getFilesForReview(owner, repo, context.payload.number, filePattens)), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => files.filter(file => file.patch !== undefined))), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_7__/* .forEach */ .Ed_(files, file => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.pipe */ .OD.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(CodeReview => CodeReview.codeReviewFor(file)), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(res => {
-            return _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(PullRequest => PullRequest.createReviewComment({
+        const a = excludeFilePatterns.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(filePattens => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(PullRequest => PullRequest.getFilesForReview(owner, repo, context.payload.number, filePattens)), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => files.filter(file => file.patch !== undefined))), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_8__/* .forEach */ .Ed_(files, file => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.pipe */ .OD.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(CodeReview => CodeReview.codeReviewFor(file)), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(res => {
+            return _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(PullRequest => PullRequest.createReviewComment({
                 repo,
                 owner,
                 pull_number: context.payload.number,
@@ -49762,12 +49776,12 @@ const run = async () => {
             })));
         })))))));
         return a;
-    }), effect__WEBPACK_IMPORTED_MODULE_5__/* .orElse */ .vx(eventName => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => {
+    }), effect__WEBPACK_IMPORTED_MODULE_6__/* .orElse */ .vx(eventName => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => {
         _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`This action only works on pull_request events. Got: ${eventName}`);
     })));
-    const runnable = effect__WEBPACK_IMPORTED_MODULE_7__/* .provide */ .JJ_(program, MainLive);
-    const result = await effect__WEBPACK_IMPORTED_MODULE_7__/* .runPromiseExit */ .r9F(runnable);
-    if (effect__WEBPACK_IMPORTED_MODULE_8__/* .isFailure */ .hx(result)) {
+    const runnable = effect__WEBPACK_IMPORTED_MODULE_8__/* .provide */ .JJ_(program, MainLive);
+    const result = await effect__WEBPACK_IMPORTED_MODULE_8__/* .runPromiseExit */ .r9F(runnable);
+    if (effect__WEBPACK_IMPORTED_MODULE_9__/* .isFailure */ .hx(result)) {
         _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(result.cause.toString());
     }
 };
@@ -49793,10 +49807,10 @@ const fetchInstructionsPrompt = async (octokit, owner, repo, filePath) => {
     }
 };
 const init = (model, githubToken, instructionsPrompt) => {
-    const CodeReviewLive = effect__WEBPACK_IMPORTED_MODULE_9__/* .effect */ .cE(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview */ .OD, effect__WEBPACK_IMPORTED_MODULE_7__/* .map */ .UID(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage */ .oh, _ => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.of */ .OD.of(new _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReviewClass */ .Pr(model, instructionsPrompt))));
-    const octokitLive = effect__WEBPACK_IMPORTED_MODULE_9__/* .succeed */ .ng(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .octokitTag */ .sK, _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken));
-    const PullRequestLive = effect__WEBPACK_IMPORTED_MODULE_9__/* .effect */ .cE(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest */ .i7, effect__WEBPACK_IMPORTED_MODULE_7__/* .map */ .UID(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .octokitTag */ .sK, _ => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.of */ .i7.of(new _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequestClass */ .TC())));
-    const mainLive = CodeReviewLive.pipe(effect__WEBPACK_IMPORTED_MODULE_9__/* .merge */ .TS(PullRequestLive), effect__WEBPACK_IMPORTED_MODULE_9__/* .merge */ .TS(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage.Live */ .oh.Live), effect__WEBPACK_IMPORTED_MODULE_9__/* .merge */ .TS(octokitLive), effect__WEBPACK_IMPORTED_MODULE_9__/* .provide */ .JJ(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage.Live */ .oh.Live), effect__WEBPACK_IMPORTED_MODULE_9__/* .provide */ .JJ(octokitLive));
+    const CodeReviewLive = effect__WEBPACK_IMPORTED_MODULE_10__/* .effect */ .cE(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview */ .OD, effect__WEBPACK_IMPORTED_MODULE_8__/* .map */ .UID(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage */ .oh, _ => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.of */ .OD.of(new _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReviewClass */ .Pr(model, instructionsPrompt))));
+    const octokitLive = effect__WEBPACK_IMPORTED_MODULE_10__/* .succeed */ .ng(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .octokitTag */ .sK, _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken));
+    const PullRequestLive = effect__WEBPACK_IMPORTED_MODULE_10__/* .effect */ .cE(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest */ .i7, effect__WEBPACK_IMPORTED_MODULE_8__/* .map */ .UID(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .octokitTag */ .sK, _ => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.of */ .i7.of(new _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequestClass */ .TC())));
+    const mainLive = CodeReviewLive.pipe(effect__WEBPACK_IMPORTED_MODULE_10__/* .merge */ .TS(PullRequestLive), effect__WEBPACK_IMPORTED_MODULE_10__/* .merge */ .TS(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage.Live */ .oh.Live), effect__WEBPACK_IMPORTED_MODULE_10__/* .merge */ .TS(octokitLive), effect__WEBPACK_IMPORTED_MODULE_10__/* .provide */ .JJ(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage.Live */ .oh.Live), effect__WEBPACK_IMPORTED_MODULE_10__/* .provide */ .JJ(octokitLive));
     return mainLive;
 };
 await run();

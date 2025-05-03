@@ -1,6 +1,6 @@
 import { minimatch } from 'minimatch';
 import * as core from '@actions/core';
-import { systemPrompt, instructionsPrompt, extensionToLanguageMap } from './constants.js';
+import { systemPrompt, extensionToLanguageMap, instructionsPromptPrefix, instructionsPromptSuffix } from './constants.js';
 import { Effect, Context, Option, Layer, Schedule } from 'effect';
 import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from 'langchain/prompts';
 import { LLMChain } from 'langchain/chains';
@@ -35,13 +35,17 @@ const getFileExtension = (filename) => {
 export const CodeReview = Context.GenericTag('CodeReview');
 export class CodeReviewClass {
     llm;
-    chatPrompt = ChatPromptTemplate.fromPromptMessages([
-        SystemMessagePromptTemplate.fromTemplate(systemPrompt),
-        HumanMessagePromptTemplate.fromTemplate(instructionsPrompt)
-    ]);
+    chatPrompt;
     chain;
-    constructor(llm) {
+    instructionsPrompt;
+    constructor(llm, instructionsPrompt) {
         this.llm = llm;
+        this.instructionsPrompt = instructionsPrompt;
+        this.chatPrompt = ChatPromptTemplate.fromPromptMessages([
+            SystemMessagePromptTemplate.fromTemplate(systemPrompt),
+            HumanMessagePromptTemplate.fromTemplate(`${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`)
+        ]);
+        //core.info(`Instructions Prompt: ${instructionsPromptPrefix}${this.instructionsPrompt}${instructionsPromptSuffix}`)
         this.chain = new LLMChain({
             prompt: this.chatPrompt,
             llm: this.llm
