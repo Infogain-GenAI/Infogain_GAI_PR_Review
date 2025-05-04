@@ -42,50 +42,57 @@ export class PullRequestClass implements PullRequest {
     pullNumber: number,
     excludeFilePatterns: string[]
   ): Effect.Effect<PullRequestFile[], UnknownException, InstanceType<typeof GitHub>> => {
+    core.info("Step11: Fetching files for review."); // Debug statement
     const program = octokitTag.pipe(
       Effect.flatMap(octokit =>
         Effect.retry(
-          Effect.tryPromise(() =>
-            octokit.rest.pulls.listFiles({ owner, repo, pull_number: pullNumber, per_page: 100 })
-          ),
+          Effect.tryPromise(() => {
+            core.info(`Step11.1: Sending request to list files for pull request #${pullNumber}.`); // Debug statement
+            return octokit.rest.pulls.listFiles({ owner, repo, pull_number: pullNumber, per_page: 100 });
+          }),
           exponentialBackoffWithJitter(3)
         )
       ),
       Effect.tap(pullRequestFiles =>
-        Effect.sync(() =>
-          core.info(
-            `Original files for review ${pullRequestFiles.data.length}: ${pullRequestFiles.data.map(_ => _.filename)}`
-          )
-        )
+        Effect.sync(() => {
+          core.info(`Step11.2: Received ${pullRequestFiles.data.length} files for review.`); // Debug statement
+        })
       ),
       Effect.flatMap(pullRequestFiles =>
-        Effect.sync(() =>
-          pullRequestFiles.data.filter(file => {
+        Effect.sync(() => {
+          core.info("Step11.3: Filtering files based on exclude patterns."); // Debug statement
+          return pullRequestFiles.data.filter(file => {
             return (
               excludeFilePatterns.every(pattern => !minimatch(file.filename, pattern, { matchBase: true })) &&
               (file.status === 'modified' || file.status === 'added' || file.status === 'changed')
-            )
-          })
-        )
+            );
+          });
+        })
       ),
       Effect.tap(filteredFiles =>
-        Effect.sync(() =>
-          core.info(`Filtered files for review ${filteredFiles.length}: ${filteredFiles.map(_ => _.filename)}`)
-        )
+        Effect.sync(() => {
+          core.info(`Step11.4: Filtered files count: ${filteredFiles.length}.`); // Debug statement
+        })
       )
-    )
+    );
 
-    return program
+    return program;
   }
 
   createReviewComment = (
     requestOptions: CreateReviewCommentRequest
   ): Effect.Effect<void, Error, InstanceType<typeof GitHub>> =>
     octokitTag.pipe(
-      Effect.tap(_ => core.debug(`Creating review comment: ${JSON.stringify(requestOptions)}`)),
+      Effect.tap(_ => {
+        core.info("Step10: Preparing to create review comment."); // Debug statement
+        core.info(`Step10.1: Request options: ${JSON.stringify(requestOptions)}`); // Debug statement
+      }),
       Effect.flatMap(octokit =>
         Effect.retry(
-          Effect.tryPromise(() => octokit.rest.pulls.createReviewComment(requestOptions)),
+          Effect.tryPromise(() => {
+            core.info("Step10.2: Sending request to create review comment."); // Debug statement
+            return octokit.rest.pulls.createReviewComment(requestOptions);
+          }),
           exponentialBackoffWithJitter(3)
         )
       )

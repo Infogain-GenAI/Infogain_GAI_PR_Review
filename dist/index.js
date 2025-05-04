@@ -49634,13 +49634,30 @@ const octokitTag = Context/* GenericTag */.hV('octokit');
 const PullRequest = Context/* GenericTag */.hV('PullRequest');
 class PullRequestClass {
     getFilesForReview = (owner, repo, pullNumber, excludeFilePatterns) => {
-        const program = octokitTag.pipe(esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.listFiles({ owner, repo, pull_number: pullNumber, per_page: 100 })), exponentialBackoffWithJitter(3))), esm_Effect/* tap */.bwX(pullRequestFiles => esm_Effect/* sync */.Z_X(() => core.info(`Original files for review ${pullRequestFiles.data.length}: ${pullRequestFiles.data.map(_ => _.filename)}`))), esm_Effect/* flatMap */.VSD(pullRequestFiles => esm_Effect/* sync */.Z_X(() => pullRequestFiles.data.filter(file => {
-            return (excludeFilePatterns.every(pattern => !minimatch(file.filename, pattern, { matchBase: true })) &&
-                (file.status === 'modified' || file.status === 'added' || file.status === 'changed'));
-        }))), esm_Effect/* tap */.bwX(filteredFiles => esm_Effect/* sync */.Z_X(() => core.info(`Filtered files for review ${filteredFiles.length}: ${filteredFiles.map(_ => _.filename)}`))));
+        core.info("Step11: Fetching files for review."); // Debug statement
+        const program = octokitTag.pipe(esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => {
+            core.info(`Step11.1: Sending request to list files for pull request #${pullNumber}.`); // Debug statement
+            return octokit.rest.pulls.listFiles({ owner, repo, pull_number: pullNumber, per_page: 100 });
+        }), exponentialBackoffWithJitter(3))), esm_Effect/* tap */.bwX(pullRequestFiles => esm_Effect/* sync */.Z_X(() => {
+            core.info(`Step11.2: Received ${pullRequestFiles.data.length} files for review.`); // Debug statement
+        })), esm_Effect/* flatMap */.VSD(pullRequestFiles => esm_Effect/* sync */.Z_X(() => {
+            core.info("Step11.3: Filtering files based on exclude patterns."); // Debug statement
+            return pullRequestFiles.data.filter(file => {
+                return (excludeFilePatterns.every(pattern => !minimatch(file.filename, pattern, { matchBase: true })) &&
+                    (file.status === 'modified' || file.status === 'added' || file.status === 'changed'));
+            });
+        })), esm_Effect/* tap */.bwX(filteredFiles => esm_Effect/* sync */.Z_X(() => {
+            core.info(`Step11.4: Filtered files count: ${filteredFiles.length}.`); // Debug statement
+        })));
         return program;
     };
-    createReviewComment = (requestOptions) => octokitTag.pipe(esm_Effect/* tap */.bwX(_ => core.debug(`Creating review comment: ${JSON.stringify(requestOptions)}`)), esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReviewComment(requestOptions)), exponentialBackoffWithJitter(3))));
+    createReviewComment = (requestOptions) => octokitTag.pipe(esm_Effect/* tap */.bwX(_ => {
+        core.info("Step10: Preparing to create review comment."); // Debug statement
+        core.info(`Step10.1: Request options: ${JSON.stringify(requestOptions)}`); // Debug statement
+    }), esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => {
+        core.info("Step10.2: Sending request to create review comment."); // Debug statement
+        return octokit.rest.pulls.createReviewComment(requestOptions);
+    }), exponentialBackoffWithJitter(3))));
     createReview = (requestOptions) => octokitTag.pipe(esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReview(requestOptions)), exponentialBackoffWithJitter(3))));
 }
 const LanguageDetection = esm_Effect/* sync */.Z_X(() => {
@@ -49735,56 +49752,77 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 (0,dotenv__WEBPACK_IMPORTED_MODULE_0__.config)();
 let isBlockExecuted = false; // Flag to ensure the block runs only once
 const run = async () => {
-    if (isBlockExecuted)
-        return; // Exit if the block has already been executed
-    isBlockExecuted = true; // Set the flag to true
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step1: Starting the run function"); // Debug statement
+    if (isBlockExecuted) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step1.1: Block already executed, exiting."); // Debug statement
+        return;
+    }
+    isBlockExecuted = true;
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step1.2: Block execution flag set to true."); // Debug statement
     const openAIApiKey = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('openai_api_key');
     const githubToken = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('github_token');
     const modelName = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('model_name');
     const temperature = parseInt(_actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('model_temperature'));
-    const instructionsFilePath = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('instructions_file_path'); // GitHub secret for the file path
+    const instructionsFilePath = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('instructions_file_path');
     if (!githubToken) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed('GitHub token is missing. Please provide a valid token.');
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed('Step2: GitHub token is missing. Exiting.'); // Debug statement
         return;
     }
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step3: Initializing GitHub context and octokit."); // Debug statement
     const context = _actions_github__WEBPACK_IMPORTED_MODULE_2__.context;
     const { owner, repo } = context.repo;
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken);
-    // Fetch the instructionsPrompt from the GitHub file
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step4: Fetching instructions prompt."); // Debug statement
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
     const instructionsPrompt = _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk + instructionsPromptMid + _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r;
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step5: Initializing the model and layers."); // Debug statement
     const model = new langchain_chat_models__WEBPACK_IMPORTED_MODULE_3__/* .ChatOpenAI */ .z7({
         temperature,
         openAIApiKey,
         modelName,
     });
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("hello;" + instructionsPrompt);
     const MainLive = init(model, githubToken, instructionsPrompt);
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step6: Matching event name."); // Debug statement
     const program = effect__WEBPACK_IMPORTED_MODULE_6__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_6__/* .when */ .gx('pull_request', () => {
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step6.1: Handling pull_request event."); // Debug statement
         const excludeFilePatterns = (0,effect__WEBPACK_IMPORTED_MODULE_7__/* .pipe */ .zG)(effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => _actions_github__WEBPACK_IMPORTED_MODULE_2__.context.payload), effect__WEBPACK_IMPORTED_MODULE_8__/* .tap */ .bwX(pullRequestPayload => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`repoName: ${repo} pull_number: ${context.payload.number} owner: ${owner} sha: ${pullRequestPayload.pull_request.head.sha}`);
+            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step6.2: repoName: ${repo}, pull_number: ${context.payload.number}, owner: ${owner}, sha: ${pullRequestPayload.pull_request.head.sha}`);
         })), effect__WEBPACK_IMPORTED_MODULE_8__/* .map */ .UID(() => _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('exclude_files')
             .split(',')
             .map(_ => _.trim())));
-        const a = excludeFilePatterns.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(filePattens => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(PullRequest => PullRequest.getFilesForReview(owner, repo, context.payload.number, filePattens)), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => files.filter(file => file.patch !== undefined))), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_8__/* .forEach */ .Ed_(files, file => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.pipe */ .OD.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(CodeReview => CodeReview.codeReviewFor(file)), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(res => {
-            return _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(PullRequest => PullRequest.createReviewComment({
-                repo,
-                owner,
-                pull_number: context.payload.number,
-                commit_id: context.payload.pull_request?.head.sha,
-                path: file.filename,
-                body: res.text,
-                subject_type: 'file'
-            })));
-        })))))));
+        const a = excludeFilePatterns.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(filePatterns => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(PullRequest => {
+            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step6.3: Fetching files for review."); // Debug statement
+            return PullRequest.getFilesForReview(owner, repo, context.payload.number, filePatterns);
+        }), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(files => {
+            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step6.4: Filtering files with patches. Total files: ${files.length}`); // Debug statement
+            return effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => files.filter(file => file.patch !== undefined));
+        }), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_8__/* .forEach */ .Ed_(files, file => {
+            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step6.5: Processing file: ${file.filename}`); // Debug statement
+            return _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.pipe */ .OD.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(CodeReview => CodeReview.codeReviewFor(file)), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(res => {
+                _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step6.6: Creating review comment for file: ${file.filename}`); // Debug statement
+                return _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(PullRequest => PullRequest.createReviewComment({
+                    repo,
+                    owner,
+                    pull_number: context.payload.number,
+                    commit_id: context.payload.pull_request?.head.sha,
+                    path: file.filename,
+                    body: res.text,
+                    subject_type: 'file'
+                })));
+            }));
+        })))));
         return a;
     }), effect__WEBPACK_IMPORTED_MODULE_6__/* .orElse */ .vx(eventName => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`This action only works on pull_request events. Got: ${eventName}`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`Step7: Unsupported event. Got: ${eventName}`); // Debug statement
     })));
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step8: Running the program."); // Debug statement
     const runnable = effect__WEBPACK_IMPORTED_MODULE_8__/* .provide */ .JJ_(program, MainLive);
     const result = await effect__WEBPACK_IMPORTED_MODULE_8__/* .runPromiseExit */ .r9F(runnable);
     if (effect__WEBPACK_IMPORTED_MODULE_9__/* .isFailure */ .hx(result)) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(result.cause.toString());
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`Step9: Program failed with error: ${result.cause.toString()}`); // Debug statement
+    }
+    else {
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step9: Program completed successfully."); // Debug statement
     }
 };
 // Function to fetch instructionsPrompt from a GitHub file
