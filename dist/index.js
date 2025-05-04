@@ -49782,6 +49782,7 @@ const run = async () => {
         // azureOpenAIApiVersion
     });
     const MainLive = init(model, githubToken);
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Debug: MainLive object: ${JSON.stringify(MainLive, null, 2)}`); // Debug statement for MainLive
     const program = effect__WEBPACK_IMPORTED_MODULE_5__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_5__/* .when */ .gx('pull_request', () => {
         const excludeFilePatterns = (0,effect__WEBPACK_IMPORTED_MODULE_6__/* .pipe */ .zG)(effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => _actions_github__WEBPACK_IMPORTED_MODULE_2__.context.payload), effect__WEBPACK_IMPORTED_MODULE_7__/* .tap */ .bwX(pullRequestPayload => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => {
             _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`repoName: ${repo} pull_number: ${context.payload.number} owner: ${owner} sha: ${pullRequestPayload.pull_request.head.sha}`);
@@ -49789,27 +49790,29 @@ const run = async () => {
             .split(',')
             .map(_ => _.trim())));
         const a = excludeFilePatterns.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(filePattens => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(PullRequest => PullRequest.getFilesForReview(owner, repo, context.payload.number, filePattens)), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => files.filter(file => file.patch !== undefined))), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_7__/* .forEach */ .Ed_(files, file => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.pipe */ .OD.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(CodeReview => CodeReview.codeReviewFor(file)), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(res => {
-            // // Ensure res is an array
-            // const comments = Array.isArray(res) ? res : [res];
             return _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(PullRequest => PullRequest.createReviewComment({
                 repo,
                 owner,
                 pull_number: context.payload.number,
                 commit_id: context.payload.pull_request?.head.sha,
                 path: file.filename,
-                body: res.text, //comments.map((r: any) => r.text).join('\n'), // Consolidate comments//res.text,
+                body: res.text,
                 subject_type: 'file'
             })));
-        })))) //
-        )));
+        })))))));
         return a;
     }), effect__WEBPACK_IMPORTED_MODULE_5__/* .orElse */ .vx(eventName => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => {
         _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`This action only works on pull_request events. Got: ${eventName}`);
     })));
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Debug: Program object: ${JSON.stringify(program, null, 2)}`); // Debug statement for program
     const runnable = effect__WEBPACK_IMPORTED_MODULE_7__/* .provide */ .JJ_(program, MainLive);
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Debug: Runnable object: ${JSON.stringify(runnable, null, 2)}`); // Debug statement for runnable
     const result = await effect__WEBPACK_IMPORTED_MODULE_7__/* .runPromiseExit */ .r9F(runnable);
     if (effect__WEBPACK_IMPORTED_MODULE_8__/* .isFailure */ .hx(result)) {
         _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(result.cause.toString());
+    }
+    else {
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Debug: Program executed successfully."); // Debug statement for successful execution
     }
 };
 const init = (model, githubToken) => {
