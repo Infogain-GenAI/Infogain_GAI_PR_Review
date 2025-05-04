@@ -10,6 +10,8 @@ import {instructionsPromptPrefix,instructionsPromptSuffix} from './constants.js'
 
 config()
 let isBlockExecuted = false; // Flag to ensure the block runs only once
+export let instructionsPrompt: string;
+
 export const run = async (): Promise<void> => {
     core.info("Step1: Starting the run function"); // Debug statement
     if (isBlockExecuted) {
@@ -37,7 +39,7 @@ export const run = async (): Promise<void> => {
 
     core.info("Step4: Fetching instructions prompt."); // Debug statement
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
-    const instructionsPrompt = instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix;
+    instructionsPrompt = instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix;
 
     core.info("Step5: Initializing the model and layers."); // Debug statement
     const model: BaseChatModel = new ChatOpenAI({
@@ -45,7 +47,7 @@ export const run = async (): Promise<void> => {
         openAIApiKey,
         modelName,
     });
-    const MainLive = init(model, githubToken, instructionsPrompt);
+    const MainLive = init(model, githubToken);
 
     core.info("Step6: Matching event name."); // Debug statement
     const program = Match.value(context.eventName).pipe(
@@ -156,10 +158,10 @@ const fetchInstructionsPrompt = async (
         }
 };
 
-const init = (model: BaseChatModel, githubToken: string, instructionsPrompt: string) => {
+const init = (model: BaseChatModel, githubToken: string) => {
     const CodeReviewLive = Layer.effect(
         CodeReview,
-        Effect.map(DetectLanguage, _ => CodeReview.of(new CodeReviewClass(model, instructionsPrompt)))
+        Effect.map(DetectLanguage, _ => CodeReview.of(new CodeReviewClass(model)))
     )
 
     const octokitLive = Layer.succeed(octokitTag, github.getOctokit(githubToken))

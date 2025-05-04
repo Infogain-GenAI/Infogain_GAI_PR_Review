@@ -11,6 +11,7 @@ import type { ChainValues } from 'langchain/schema'
 import parseDiff from 'parse-diff'
 import { NoSuchElementException, UnknownException } from 'effect/Cause'
 import { constant } from 'effect/Function'
+import {instructionsPrompt} from './main.js'
 
 export type PullRequestFileResponse = RestEndpointMethodTypes['pulls']['listFiles']['response']
 
@@ -151,14 +152,12 @@ export class CodeReviewClass implements CodeReview {
     private llm: BaseChatModel
     private chatPrompt: ChatPromptTemplate
     private chain: LLMChain<string>
-    private instructionsPrompt: string
 
-    constructor(llm: BaseChatModel, instructionsPrompt: string) {
+    constructor(llm: BaseChatModel) {
         this.llm = llm
-        this.instructionsPrompt = instructionsPrompt
         this.chatPrompt = ChatPromptTemplate.fromPromptMessages([
             SystemMessagePromptTemplate.fromTemplate(systemPrompt),
-            HumanMessagePromptTemplate.fromTemplate(this.instructionsPrompt)
+            HumanMessagePromptTemplate.fromTemplate(instructionsPrompt)
         ])
         this.chain = new LLMChain({
             prompt: this.chatPrompt,
