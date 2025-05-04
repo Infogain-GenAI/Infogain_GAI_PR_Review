@@ -105,6 +105,7 @@ const runnable = Effect.provide(program, MainLive);
 core.info(`Debug: Runnable object: ${JSON.stringify(runnable, null, 2)}`); // Debug statement for runnable
 
 const result = await Effect.runPromiseExit(runnable);
+core.info(`Debug: result: ${JSON.stringify(result, null, 2)}`);
 
 if (Exit.isFailure(result)) {
     core.setFailed(result.cause.toString());

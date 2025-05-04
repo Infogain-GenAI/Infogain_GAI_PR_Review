@@ -49808,6 +49808,7 @@ const run = async () => {
     const runnable = effect__WEBPACK_IMPORTED_MODULE_7__/* .provide */ .JJ_(program, MainLive);
     _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Debug: Runnable object: ${JSON.stringify(runnable, null, 2)}`); // Debug statement for runnable
     const result = await effect__WEBPACK_IMPORTED_MODULE_7__/* .runPromiseExit */ .r9F(runnable);
+    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Debug: result: ${JSON.stringify(result, null, 2)}`);
     if (effect__WEBPACK_IMPORTED_MODULE_8__/* .isFailure */ .hx(result)) {
         _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(result.cause.toString());
     }
