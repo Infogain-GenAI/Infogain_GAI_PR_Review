@@ -144,14 +144,15 @@ export class CodeReviewClass implements CodeReview {
     private llm: BaseChatModel
     private chatPrompt: ChatPromptTemplate
     private chain: LLMChain<string>
+    private instructionsPrompt: string
 
     constructor(llm: BaseChatModel, instructionsPrompt: string) {
         this.llm = llm
+        this.instructionsPrompt = instructionsPrompt
         this.chatPrompt = ChatPromptTemplate.fromPromptMessages([
             SystemMessagePromptTemplate.fromTemplate(systemPrompt),
-            HumanMessagePromptTemplate.fromTemplate(instructionsPrompt)
+            HumanMessagePromptTemplate.fromTemplate(this.instructionsPrompt)
         ])
-        core.info(`Instructions Prompt: ${instructionsPrompt}`)
         this.chain = new LLMChain({
             prompt: this.chatPrompt,
             llm: this.llm
