@@ -44058,15 +44058,1790 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 9042:
+/***/ 4237:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "G0": () => (/* binding */ extensionToLanguageMap),
-/* harmony export */   "UT": () => (/* binding */ systemPrompt),
-/* harmony export */   "_r": () => (/* binding */ instructionsPromptSuffix),
-/* harmony export */   "jk": () => (/* binding */ instructionsPromptPrefix)
-/* harmony export */ });
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "OD": () => (/* binding */ CodeReview),
+  "Pr": () => (/* binding */ CodeReviewClass),
+  "oh": () => (/* binding */ DetectLanguage),
+  "i7": () => (/* binding */ PullRequest),
+  "TC": () => (/* binding */ PullRequestClass),
+  "sK": () => (/* binding */ octokitTag)
+});
+
+// UNUSED EXPORTS: exponentialBackoffWithJitter, retryWithBackoff
+
+// EXTERNAL MODULE: ./node_modules/brace-expansion/index.js
+var brace_expansion = __nccwpck_require__(3717);
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/assert-valid-pattern.js
+const MAX_PATTERN_LENGTH = 1024 * 64;
+const assertValidPattern = (pattern) => {
+    if (typeof pattern !== 'string') {
+        throw new TypeError('invalid pattern');
+    }
+    if (pattern.length > MAX_PATTERN_LENGTH) {
+        throw new TypeError('pattern is too long');
+    }
+};
+//# sourceMappingURL=assert-valid-pattern.js.map
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/brace-expressions.js
+// translate the various posix character classes into unicode properties
+// this works across all unicode locales
+// { <posix class>: [<translation>, /u flag required, negated]
+const posixClasses = {
+    '[:alnum:]': ['\\p{L}\\p{Nl}\\p{Nd}', true],
+    '[:alpha:]': ['\\p{L}\\p{Nl}', true],
+    '[:ascii:]': ['\\x' + '00-\\x' + '7f', false],
+    '[:blank:]': ['\\p{Zs}\\t', true],
+    '[:cntrl:]': ['\\p{Cc}', true],
+    '[:digit:]': ['\\p{Nd}', true],
+    '[:graph:]': ['\\p{Z}\\p{C}', true, true],
+    '[:lower:]': ['\\p{Ll}', true],
+    '[:print:]': ['\\p{C}', true],
+    '[:punct:]': ['\\p{P}', true],
+    '[:space:]': ['\\p{Z}\\t\\r\\n\\v\\f', true],
+    '[:upper:]': ['\\p{Lu}', true],
+    '[:word:]': ['\\p{L}\\p{Nl}\\p{Nd}\\p{Pc}', true],
+    '[:xdigit:]': ['A-Fa-f0-9', false],
+};
+// only need to escape a few things inside of brace expressions
+// escapes: [ \ ] -
+const braceEscape = (s) => s.replace(/[[\]\\-]/g, '\\$&');
+// escape all regexp magic characters
+const regexpEscape = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+// everything has already been escaped, we just have to join
+const rangesToString = (ranges) => ranges.join('');
+// takes a glob string at a posix brace expression, and returns
+// an equivalent regular expression source, and boolean indicating
+// whether the /u flag needs to be applied, and the number of chars
+// consumed to parse the character class.
+// This also removes out of order ranges, and returns ($.) if the
+// entire class just no good.
+const parseClass = (glob, position) => {
+    const pos = position;
+    /* c8 ignore start */
+    if (glob.charAt(pos) !== '[') {
+        throw new Error('not in a brace expression');
+    }
+    /* c8 ignore stop */
+    const ranges = [];
+    const negs = [];
+    let i = pos + 1;
+    let sawStart = false;
+    let uflag = false;
+    let escaping = false;
+    let negate = false;
+    let endPos = pos;
+    let rangeStart = '';
+    WHILE: while (i < glob.length) {
+        const c = glob.charAt(i);
+        if ((c === '!' || c === '^') && i === pos + 1) {
+            negate = true;
+            i++;
+            continue;
+        }
+        if (c === ']' && sawStart && !escaping) {
+            endPos = i + 1;
+            break;
+        }
+        sawStart = true;
+        if (c === '\\') {
+            if (!escaping) {
+                escaping = true;
+                i++;
+                continue;
+            }
+            // escaped \ char, fall through and treat like normal char
+        }
+        if (c === '[' && !escaping) {
+            // either a posix class, a collation equivalent, or just a [
+            for (const [cls, [unip, u, neg]] of Object.entries(posixClasses)) {
+                if (glob.startsWith(cls, i)) {
+                    // invalid, [a-[] is fine, but not [a-[:alpha]]
+                    if (rangeStart) {
+                        return ['$.', false, glob.length - pos, true];
+                    }
+                    i += cls.length;
+                    if (neg)
+                        negs.push(unip);
+                    else
+                        ranges.push(unip);
+                    uflag = uflag || u;
+                    continue WHILE;
+                }
+            }
+        }
+        // now it's just a normal character, effectively
+        escaping = false;
+        if (rangeStart) {
+            // throw this range away if it's not valid, but others
+            // can still match.
+            if (c > rangeStart) {
+                ranges.push(braceEscape(rangeStart) + '-' + braceEscape(c));
+            }
+            else if (c === rangeStart) {
+                ranges.push(braceEscape(c));
+            }
+            rangeStart = '';
+            i++;
+            continue;
+        }
+        // now might be the start of a range.
+        // can be either c-d or c-] or c<more...>] or c] at this point
+        if (glob.startsWith('-]', i + 1)) {
+            ranges.push(braceEscape(c + '-'));
+            i += 2;
+            continue;
+        }
+        if (glob.startsWith('-', i + 1)) {
+            rangeStart = c;
+            i += 2;
+            continue;
+        }
+        // not the start of a range, just a single character
+        ranges.push(braceEscape(c));
+        i++;
+    }
+    if (endPos < i) {
+        // didn't see the end of the class, not a valid class,
+        // but might still be valid as a literal match.
+        return ['', false, 0, false];
+    }
+    // if we got no ranges and no negates, then we have a range that
+    // cannot possibly match anything, and that poisons the whole glob
+    if (!ranges.length && !negs.length) {
+        return ['$.', false, glob.length - pos, true];
+    }
+    // if we got one positive range, and it's a single character, then that's
+    // not actually a magic pattern, it's just that one literal character.
+    // we should not treat that as "magic", we should just return the literal
+    // character. [_] is a perfectly valid way to escape glob magic chars.
+    if (negs.length === 0 &&
+        ranges.length === 1 &&
+        /^\\?.$/.test(ranges[0]) &&
+        !negate) {
+        const r = ranges[0].length === 2 ? ranges[0].slice(-1) : ranges[0];
+        return [regexpEscape(r), false, endPos - pos, false];
+    }
+    const sranges = '[' + (negate ? '^' : '') + rangesToString(ranges) + ']';
+    const snegs = '[' + (negate ? '' : '^') + rangesToString(negs) + ']';
+    const comb = ranges.length && negs.length
+        ? '(' + sranges + '|' + snegs + ')'
+        : ranges.length
+            ? sranges
+            : snegs;
+    return [comb, uflag, endPos - pos, true];
+};
+//# sourceMappingURL=brace-expressions.js.map
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/unescape.js
+/**
+ * Un-escape a string that has been escaped with {@link escape}.
+ *
+ * If the {@link windowsPathsNoEscape} option is used, then square-brace
+ * escapes are removed, but not backslash escapes.  For example, it will turn
+ * the string `'[*]'` into `*`, but it will not turn `'\\*'` into `'*'`,
+ * becuase `\` is a path separator in `windowsPathsNoEscape` mode.
+ *
+ * When `windowsPathsNoEscape` is not set, then both brace escapes and
+ * backslash escapes are removed.
+ *
+ * Slashes (and backslashes in `windowsPathsNoEscape` mode) cannot be escaped
+ * or unescaped.
+ */
+const unescape_unescape = (s, { windowsPathsNoEscape = false, } = {}) => {
+    return windowsPathsNoEscape
+        ? s.replace(/\[([^\/\\])\]/g, '$1')
+        : s.replace(/((?!\\).|^)\[([^\/\\])\]/g, '$1$2').replace(/\\([^\/])/g, '$1');
+};
+//# sourceMappingURL=unescape.js.map
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/ast.js
+// parse a single path portion
+
+
+const types = new Set(['!', '?', '+', '*', '@']);
+const isExtglobType = (c) => types.has(c);
+// Patterns that get prepended to bind to the start of either the
+// entire string, or just a single path portion, to prevent dots
+// and/or traversal patterns, when needed.
+// Exts don't need the ^ or / bit, because the root binds that already.
+const startNoTraversal = '(?!\\.\\.?(?:$|/))';
+const startNoDot = '(?!\\.)';
+// characters that indicate a start of pattern needs the "no dots" bit,
+// because a dot *might* be matched. ( is not in the list, because in
+// the case of a child extglob, it will handle the prevention itself.
+const addPatternStart = new Set(['[', '.']);
+// cases where traversal is A-OK, no dot prevention needed
+const justDots = new Set(['..', '.']);
+const reSpecials = new Set('().*{}+?[]^$\\!');
+const regExpEscape = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+// any single thing other than /
+const qmark = '[^/]';
+// * => any number of characters
+const star = qmark + '*?';
+// use + when we need to ensure that *something* matches, because the * is
+// the only thing in the path portion.
+const starNoEmpty = qmark + '+?';
+// remove the \ chars that we added if we end up doing a nonmagic compare
+// const deslash = (s: string) => s.replace(/\\(.)/g, '$1')
+class AST {
+    type;
+    #root;
+    #hasMagic;
+    #uflag = false;
+    #parts = [];
+    #parent;
+    #parentIndex;
+    #negs;
+    #filledNegs = false;
+    #options;
+    #toString;
+    // set to true if it's an extglob with no children
+    // (which really means one child of '')
+    #emptyExt = false;
+    constructor(type, parent, options = {}) {
+        this.type = type;
+        // extglobs are inherently magical
+        if (type)
+            this.#hasMagic = true;
+        this.#parent = parent;
+        this.#root = this.#parent ? this.#parent.#root : this;
+        this.#options = this.#root === this ? options : this.#root.#options;
+        this.#negs = this.#root === this ? [] : this.#root.#negs;
+        if (type === '!' && !this.#root.#filledNegs)
+            this.#negs.push(this);
+        this.#parentIndex = this.#parent ? this.#parent.#parts.length : 0;
+    }
+    get hasMagic() {
+        /* c8 ignore start */
+        if (this.#hasMagic !== undefined)
+            return this.#hasMagic;
+        /* c8 ignore stop */
+        for (const p of this.#parts) {
+            if (typeof p === 'string')
+                continue;
+            if (p.type || p.hasMagic)
+                return (this.#hasMagic = true);
+        }
+        // note: will be undefined until we generate the regexp src and find out
+        return this.#hasMagic;
+    }
+    // reconstructs the pattern
+    toString() {
+        if (this.#toString !== undefined)
+            return this.#toString;
+        if (!this.type) {
+            return (this.#toString = this.#parts.map(p => String(p)).join(''));
+        }
+        else {
+            return (this.#toString =
+                this.type + '(' + this.#parts.map(p => String(p)).join('|') + ')');
+        }
+    }
+    #fillNegs() {
+        /* c8 ignore start */
+        if (this !== this.#root)
+            throw new Error('should only call on root');
+        if (this.#filledNegs)
+            return this;
+        /* c8 ignore stop */
+        // call toString() once to fill this out
+        this.toString();
+        this.#filledNegs = true;
+        let n;
+        while ((n = this.#negs.pop())) {
+            if (n.type !== '!')
+                continue;
+            // walk up the tree, appending everthing that comes AFTER parentIndex
+            let p = n;
+            let pp = p.#parent;
+            while (pp) {
+                for (let i = p.#parentIndex + 1; !pp.type && i < pp.#parts.length; i++) {
+                    for (const part of n.#parts) {
+                        /* c8 ignore start */
+                        if (typeof part === 'string') {
+                            throw new Error('string part in extglob AST??');
+                        }
+                        /* c8 ignore stop */
+                        part.copyIn(pp.#parts[i]);
+                    }
+                }
+                p = pp;
+                pp = p.#parent;
+            }
+        }
+        return this;
+    }
+    push(...parts) {
+        for (const p of parts) {
+            if (p === '')
+                continue;
+            /* c8 ignore start */
+            if (typeof p !== 'string' && !(p instanceof AST && p.#parent === this)) {
+                throw new Error('invalid part: ' + p);
+            }
+            /* c8 ignore stop */
+            this.#parts.push(p);
+        }
+    }
+    toJSON() {
+        const ret = this.type === null
+            ? this.#parts.slice().map(p => (typeof p === 'string' ? p : p.toJSON()))
+            : [this.type, ...this.#parts.map(p => p.toJSON())];
+        if (this.isStart() && !this.type)
+            ret.unshift([]);
+        if (this.isEnd() &&
+            (this === this.#root ||
+                (this.#root.#filledNegs && this.#parent?.type === '!'))) {
+            ret.push({});
+        }
+        return ret;
+    }
+    isStart() {
+        if (this.#root === this)
+            return true;
+        // if (this.type) return !!this.#parent?.isStart()
+        if (!this.#parent?.isStart())
+            return false;
+        if (this.#parentIndex === 0)
+            return true;
+        // if everything AHEAD of this is a negation, then it's still the "start"
+        const p = this.#parent;
+        for (let i = 0; i < this.#parentIndex; i++) {
+            const pp = p.#parts[i];
+            if (!(pp instanceof AST && pp.type === '!')) {
+                return false;
+            }
+        }
+        return true;
+    }
+    isEnd() {
+        if (this.#root === this)
+            return true;
+        if (this.#parent?.type === '!')
+            return true;
+        if (!this.#parent?.isEnd())
+            return false;
+        if (!this.type)
+            return this.#parent?.isEnd();
+        // if not root, it'll always have a parent
+        /* c8 ignore start */
+        const pl = this.#parent ? this.#parent.#parts.length : 0;
+        /* c8 ignore stop */
+        return this.#parentIndex === pl - 1;
+    }
+    copyIn(part) {
+        if (typeof part === 'string')
+            this.push(part);
+        else
+            this.push(part.clone(this));
+    }
+    clone(parent) {
+        const c = new AST(this.type, parent);
+        for (const p of this.#parts) {
+            c.copyIn(p);
+        }
+        return c;
+    }
+    static #parseAST(str, ast, pos, opt) {
+        let escaping = false;
+        let inBrace = false;
+        let braceStart = -1;
+        let braceNeg = false;
+        if (ast.type === null) {
+            // outside of a extglob, append until we find a start
+            let i = pos;
+            let acc = '';
+            while (i < str.length) {
+                const c = str.charAt(i++);
+                // still accumulate escapes at this point, but we do ignore
+                // starts that are escaped
+                if (escaping || c === '\\') {
+                    escaping = !escaping;
+                    acc += c;
+                    continue;
+                }
+                if (inBrace) {
+                    if (i === braceStart + 1) {
+                        if (c === '^' || c === '!') {
+                            braceNeg = true;
+                        }
+                    }
+                    else if (c === ']' && !(i === braceStart + 2 && braceNeg)) {
+                        inBrace = false;
+                    }
+                    acc += c;
+                    continue;
+                }
+                else if (c === '[') {
+                    inBrace = true;
+                    braceStart = i;
+                    braceNeg = false;
+                    acc += c;
+                    continue;
+                }
+                if (!opt.noext && isExtglobType(c) && str.charAt(i) === '(') {
+                    ast.push(acc);
+                    acc = '';
+                    const ext = new AST(c, ast);
+                    i = AST.#parseAST(str, ext, i, opt);
+                    ast.push(ext);
+                    continue;
+                }
+                acc += c;
+            }
+            ast.push(acc);
+            return i;
+        }
+        // some kind of extglob, pos is at the (
+        // find the next | or )
+        let i = pos + 1;
+        let part = new AST(null, ast);
+        const parts = [];
+        let acc = '';
+        while (i < str.length) {
+            const c = str.charAt(i++);
+            // still accumulate escapes at this point, but we do ignore
+            // starts that are escaped
+            if (escaping || c === '\\') {
+                escaping = !escaping;
+                acc += c;
+                continue;
+            }
+            if (inBrace) {
+                if (i === braceStart + 1) {
+                    if (c === '^' || c === '!') {
+                        braceNeg = true;
+                    }
+                }
+                else if (c === ']' && !(i === braceStart + 2 && braceNeg)) {
+                    inBrace = false;
+                }
+                acc += c;
+                continue;
+            }
+            else if (c === '[') {
+                inBrace = true;
+                braceStart = i;
+                braceNeg = false;
+                acc += c;
+                continue;
+            }
+            if (isExtglobType(c) && str.charAt(i) === '(') {
+                part.push(acc);
+                acc = '';
+                const ext = new AST(c, part);
+                part.push(ext);
+                i = AST.#parseAST(str, ext, i, opt);
+                continue;
+            }
+            if (c === '|') {
+                part.push(acc);
+                acc = '';
+                parts.push(part);
+                part = new AST(null, ast);
+                continue;
+            }
+            if (c === ')') {
+                if (acc === '' && ast.#parts.length === 0) {
+                    ast.#emptyExt = true;
+                }
+                part.push(acc);
+                acc = '';
+                ast.push(...parts, part);
+                return i;
+            }
+            acc += c;
+        }
+        // unfinished extglob
+        // if we got here, it was a malformed extglob! not an extglob, but
+        // maybe something else in there.
+        ast.type = null;
+        ast.#hasMagic = undefined;
+        ast.#parts = [str.substring(pos - 1)];
+        return i;
+    }
+    static fromGlob(pattern, options = {}) {
+        const ast = new AST(null, undefined, options);
+        AST.#parseAST(pattern, ast, 0, options);
+        return ast;
+    }
+    // returns the regular expression if there's magic, or the unescaped
+    // string if not.
+    toMMPattern() {
+        // should only be called on root
+        /* c8 ignore start */
+        if (this !== this.#root)
+            return this.#root.toMMPattern();
+        /* c8 ignore stop */
+        const glob = this.toString();
+        const [re, body, hasMagic, uflag] = this.toRegExpSource();
+        // if we're in nocase mode, and not nocaseMagicOnly, then we do
+        // still need a regular expression if we have to case-insensitively
+        // match capital/lowercase characters.
+        const anyMagic = hasMagic ||
+            this.#hasMagic ||
+            (this.#options.nocase &&
+                !this.#options.nocaseMagicOnly &&
+                glob.toUpperCase() !== glob.toLowerCase());
+        if (!anyMagic) {
+            return body;
+        }
+        const flags = (this.#options.nocase ? 'i' : '') + (uflag ? 'u' : '');
+        return Object.assign(new RegExp(`^${re}$`, flags), {
+            _src: re,
+            _glob: glob,
+        });
+    }
+    // returns the string match, the regexp source, whether there's magic
+    // in the regexp (so a regular expression is required) and whether or
+    // not the uflag is needed for the regular expression (for posix classes)
+    // TODO: instead of injecting the start/end at this point, just return
+    // the BODY of the regexp, along with the start/end portions suitable
+    // for binding the start/end in either a joined full-path makeRe context
+    // (where we bind to (^|/), or a standalone matchPart context (where
+    // we bind to ^, and not /).  Otherwise slashes get duped!
+    //
+    // In part-matching mode, the start is:
+    // - if not isStart: nothing
+    // - if traversal possible, but not allowed: ^(?!\.\.?$)
+    // - if dots allowed or not possible: ^
+    // - if dots possible and not allowed: ^(?!\.)
+    // end is:
+    // - if not isEnd(): nothing
+    // - else: $
+    //
+    // In full-path matching mode, we put the slash at the START of the
+    // pattern, so start is:
+    // - if first pattern: same as part-matching mode
+    // - if not isStart(): nothing
+    // - if traversal possible, but not allowed: /(?!\.\.?(?:$|/))
+    // - if dots allowed or not possible: /
+    // - if dots possible and not allowed: /(?!\.)
+    // end is:
+    // - if last pattern, same as part-matching mode
+    // - else nothing
+    //
+    // Always put the (?:$|/) on negated tails, though, because that has to be
+    // there to bind the end of the negated pattern portion, and it's easier to
+    // just stick it in now rather than try to inject it later in the middle of
+    // the pattern.
+    //
+    // We can just always return the same end, and leave it up to the caller
+    // to know whether it's going to be used joined or in parts.
+    // And, if the start is adjusted slightly, can do the same there:
+    // - if not isStart: nothing
+    // - if traversal possible, but not allowed: (?:/|^)(?!\.\.?$)
+    // - if dots allowed or not possible: (?:/|^)
+    // - if dots possible and not allowed: (?:/|^)(?!\.)
+    //
+    // But it's better to have a simpler binding without a conditional, for
+    // performance, so probably better to return both start options.
+    //
+    // Then the caller just ignores the end if it's not the first pattern,
+    // and the start always gets applied.
+    //
+    // But that's always going to be $ if it's the ending pattern, or nothing,
+    // so the caller can just attach $ at the end of the pattern when building.
+    //
+    // So the todo is:
+    // - better detect what kind of start is needed
+    // - return both flavors of starting pattern
+    // - attach $ at the end of the pattern when creating the actual RegExp
+    //
+    // Ah, but wait, no, that all only applies to the root when the first pattern
+    // is not an extglob. If the first pattern IS an extglob, then we need all
+    // that dot prevention biz to live in the extglob portions, because eg
+    // +(*|.x*) can match .xy but not .yx.
+    //
+    // So, return the two flavors if it's #root and the first child is not an
+    // AST, otherwise leave it to the child AST to handle it, and there,
+    // use the (?:^|/) style of start binding.
+    //
+    // Even simplified further:
+    // - Since the start for a join is eg /(?!\.) and the start for a part
+    // is ^(?!\.), we can just prepend (?!\.) to the pattern (either root
+    // or start or whatever) and prepend ^ or / at the Regexp construction.
+    toRegExpSource() {
+        if (this.#root === this)
+            this.#fillNegs();
+        if (!this.type) {
+            const noEmpty = this.isStart() && this.isEnd();
+            const src = this.#parts
+                .map(p => {
+                const [re, _, hasMagic, uflag] = typeof p === 'string'
+                    ? AST.#parseGlob(p, this.#hasMagic, noEmpty)
+                    : p.toRegExpSource();
+                this.#hasMagic = this.#hasMagic || hasMagic;
+                this.#uflag = this.#uflag || uflag;
+                return re;
+            })
+                .join('');
+            let start = '';
+            if (this.isStart()) {
+                if (typeof this.#parts[0] === 'string') {
+                    // this is the string that will match the start of the pattern,
+                    // so we need to protect against dots and such.
+                    // '.' and '..' cannot match unless the pattern is that exactly,
+                    // even if it starts with . or dot:true is set.
+                    const dotTravAllowed = this.#parts.length === 1 && justDots.has(this.#parts[0]);
+                    if (!dotTravAllowed) {
+                        const aps = addPatternStart;
+                        // check if we have a possibility of matching . or ..,
+                        // and prevent that.
+                        const needNoTrav = 
+                        // dots are allowed, and the pattern starts with [ or .
+                        (this.#options.dot && aps.has(src.charAt(0))) ||
+                            // the pattern starts with \., and then [ or .
+                            (src.startsWith('\\.') && aps.has(src.charAt(2))) ||
+                            // the pattern starts with \.\., and then [ or .
+                            (src.startsWith('\\.\\.') && aps.has(src.charAt(4)));
+                        // no need to prevent dots if it can't match a dot, or if a
+                        // sub-pattern will be preventing it anyway.
+                        const needNoDot = !this.#options.dot && aps.has(src.charAt(0));
+                        start = needNoTrav ? startNoTraversal : needNoDot ? startNoDot : '';
+                    }
+                }
+            }
+            // append the "end of path portion" pattern to negation tails
+            let end = '';
+            if (this.isEnd() &&
+                this.#root.#filledNegs &&
+                this.#parent?.type === '!') {
+                end = '(?:$|\\/)';
+            }
+            const final = start + src + end;
+            return [
+                final,
+                unescape_unescape(src),
+                (this.#hasMagic = !!this.#hasMagic),
+                this.#uflag,
+            ];
+        }
+        // some kind of extglob
+        const start = this.type === '!' ? '(?:(?!(?:' : '(?:';
+        const body = this.#parts
+            .map(p => {
+            // extglob ASTs should only contain parent ASTs
+            /* c8 ignore start */
+            if (typeof p === 'string') {
+                throw new Error('string type in extglob ast??');
+            }
+            /* c8 ignore stop */
+            // can ignore hasMagic, because extglobs are already always magic
+            const [re, _, _hasMagic, uflag] = p.toRegExpSource();
+            this.#uflag = this.#uflag || uflag;
+            return re;
+        })
+            .filter(p => !(this.isStart() && this.isEnd()) || !!p)
+            .join('|');
+        if (this.isStart() && this.isEnd() && !body && this.type !== '!') {
+            // invalid extglob, has to at least be *something* present, if it's
+            // the entire path portion.
+            const s = this.toString();
+            this.#parts = [s];
+            this.type = null;
+            this.#hasMagic = undefined;
+            return [s, unescape_unescape(this.toString()), false, false];
+        }
+        // an empty !() is exactly equivalent to a starNoEmpty
+        let final = '';
+        if (this.type === '!' && this.#emptyExt) {
+            final =
+                (this.isStart() && !this.#options.dot ? startNoDot : '') + starNoEmpty;
+        }
+        else {
+            const close = this.type === '!'
+                ? // !() must match something,but !(x) can match ''
+                    '))' +
+                        (this.isStart() && !this.#options.dot ? startNoDot : '') +
+                        star +
+                        ')'
+                : this.type === '@'
+                    ? ')'
+                    : `)${this.type}`;
+            final = start + body + close;
+        }
+        return [
+            final,
+            unescape_unescape(body),
+            (this.#hasMagic = !!this.#hasMagic),
+            this.#uflag,
+        ];
+    }
+    static #parseGlob(glob, hasMagic, noEmpty = false) {
+        let escaping = false;
+        let re = '';
+        let uflag = false;
+        for (let i = 0; i < glob.length; i++) {
+            const c = glob.charAt(i);
+            if (escaping) {
+                escaping = false;
+                re += (reSpecials.has(c) ? '\\' : '') + c;
+                continue;
+            }
+            if (c === '\\') {
+                if (i === glob.length - 1) {
+                    re += '\\\\';
+                }
+                else {
+                    escaping = true;
+                }
+                continue;
+            }
+            if (c === '[') {
+                const [src, needUflag, consumed, magic] = parseClass(glob, i);
+                if (consumed) {
+                    re += src;
+                    uflag = uflag || needUflag;
+                    i += consumed - 1;
+                    hasMagic = hasMagic || magic;
+                    continue;
+                }
+            }
+            if (c === '*') {
+                if (noEmpty && glob === '*')
+                    re += starNoEmpty;
+                else
+                    re += star;
+                hasMagic = true;
+                continue;
+            }
+            if (c === '?') {
+                re += qmark;
+                hasMagic = true;
+                continue;
+            }
+            re += regExpEscape(c);
+        }
+        return [re, unescape_unescape(glob), !!hasMagic, uflag];
+    }
+}
+//# sourceMappingURL=ast.js.map
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/escape.js
+/**
+ * Escape all magic characters in a glob pattern.
+ *
+ * If the {@link windowsPathsNoEscape | GlobOptions.windowsPathsNoEscape}
+ * option is used, then characters are escaped by wrapping in `[]`, because
+ * a magic character wrapped in a character class can only be satisfied by
+ * that exact character.  In this mode, `\` is _not_ escaped, because it is
+ * not interpreted as a magic character, but instead as a path separator.
+ */
+const escape_escape = (s, { windowsPathsNoEscape = false, } = {}) => {
+    // don't need to escape +@! because we escape the parens
+    // that make those magic, and escaping ! as [!] isn't valid,
+    // because [!]] is a valid glob class meaning not ']'.
+    return windowsPathsNoEscape
+        ? s.replace(/[?*()[\]]/g, '[$&]')
+        : s.replace(/[?*()[\]\\]/g, '\\$&');
+};
+//# sourceMappingURL=escape.js.map
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/index.js
+
+
+
+
+
+const minimatch = (p, pattern, options = {}) => {
+    assertValidPattern(pattern);
+    // shortcut: comments match nothing.
+    if (!options.nocomment && pattern.charAt(0) === '#') {
+        return false;
+    }
+    return new Minimatch(pattern, options).match(p);
+};
+// Optimized checking for the most common glob patterns.
+const starDotExtRE = /^\*+([^+@!?\*\[\(]*)$/;
+const starDotExtTest = (ext) => (f) => !f.startsWith('.') && f.endsWith(ext);
+const starDotExtTestDot = (ext) => (f) => f.endsWith(ext);
+const starDotExtTestNocase = (ext) => {
+    ext = ext.toLowerCase();
+    return (f) => !f.startsWith('.') && f.toLowerCase().endsWith(ext);
+};
+const starDotExtTestNocaseDot = (ext) => {
+    ext = ext.toLowerCase();
+    return (f) => f.toLowerCase().endsWith(ext);
+};
+const starDotStarRE = /^\*+\.\*+$/;
+const starDotStarTest = (f) => !f.startsWith('.') && f.includes('.');
+const starDotStarTestDot = (f) => f !== '.' && f !== '..' && f.includes('.');
+const dotStarRE = /^\.\*+$/;
+const dotStarTest = (f) => f !== '.' && f !== '..' && f.startsWith('.');
+const starRE = /^\*+$/;
+const starTest = (f) => f.length !== 0 && !f.startsWith('.');
+const starTestDot = (f) => f.length !== 0 && f !== '.' && f !== '..';
+const qmarksRE = /^\?+([^+@!?\*\[\(]*)?$/;
+const qmarksTestNocase = ([$0, ext = '']) => {
+    const noext = qmarksTestNoExt([$0]);
+    if (!ext)
+        return noext;
+    ext = ext.toLowerCase();
+    return (f) => noext(f) && f.toLowerCase().endsWith(ext);
+};
+const qmarksTestNocaseDot = ([$0, ext = '']) => {
+    const noext = qmarksTestNoExtDot([$0]);
+    if (!ext)
+        return noext;
+    ext = ext.toLowerCase();
+    return (f) => noext(f) && f.toLowerCase().endsWith(ext);
+};
+const qmarksTestDot = ([$0, ext = '']) => {
+    const noext = qmarksTestNoExtDot([$0]);
+    return !ext ? noext : (f) => noext(f) && f.endsWith(ext);
+};
+const qmarksTest = ([$0, ext = '']) => {
+    const noext = qmarksTestNoExt([$0]);
+    return !ext ? noext : (f) => noext(f) && f.endsWith(ext);
+};
+const qmarksTestNoExt = ([$0]) => {
+    const len = $0.length;
+    return (f) => f.length === len && !f.startsWith('.');
+};
+const qmarksTestNoExtDot = ([$0]) => {
+    const len = $0.length;
+    return (f) => f.length === len && f !== '.' && f !== '..';
+};
+/* c8 ignore start */
+const defaultPlatform = (typeof process === 'object' && process
+    ? (typeof process.env === 'object' &&
+        process.env &&
+        process.env.__MINIMATCH_TESTING_PLATFORM__) ||
+        process.platform
+    : 'posix');
+const path = {
+    win32: { sep: '\\' },
+    posix: { sep: '/' },
+};
+/* c8 ignore stop */
+const sep = defaultPlatform === 'win32' ? path.win32.sep : path.posix.sep;
+minimatch.sep = sep;
+const GLOBSTAR = Symbol('globstar **');
+minimatch.GLOBSTAR = GLOBSTAR;
+// any single thing other than /
+// don't need to escape / when using new RegExp()
+const mjs_qmark = '[^/]';
+// * => any number of characters
+const mjs_star = mjs_qmark + '*?';
+// ** when dots are allowed.  Anything goes, except .. and .
+// not (^ or / followed by one or two dots followed by $ or /),
+// followed by anything, any number of times.
+const twoStarDot = '(?:(?!(?:\\/|^)(?:\\.{1,2})($|\\/)).)*?';
+// not a ^ or / followed by a dot,
+// followed by anything, any number of times.
+const twoStarNoDot = '(?:(?!(?:\\/|^)\\.).)*?';
+const filter = (pattern, options = {}) => (p) => minimatch(p, pattern, options);
+minimatch.filter = filter;
+const ext = (a, b = {}) => Object.assign({}, a, b);
+const defaults = (def) => {
+    if (!def || typeof def !== 'object' || !Object.keys(def).length) {
+        return minimatch;
+    }
+    const orig = minimatch;
+    const m = (p, pattern, options = {}) => orig(p, pattern, ext(def, options));
+    return Object.assign(m, {
+        Minimatch: class Minimatch extends orig.Minimatch {
+            constructor(pattern, options = {}) {
+                super(pattern, ext(def, options));
+            }
+            static defaults(options) {
+                return orig.defaults(ext(def, options)).Minimatch;
+            }
+        },
+        AST: class AST extends orig.AST {
+            /* c8 ignore start */
+            constructor(type, parent, options = {}) {
+                super(type, parent, ext(def, options));
+            }
+            /* c8 ignore stop */
+            static fromGlob(pattern, options = {}) {
+                return orig.AST.fromGlob(pattern, ext(def, options));
+            }
+        },
+        unescape: (s, options = {}) => orig.unescape(s, ext(def, options)),
+        escape: (s, options = {}) => orig.escape(s, ext(def, options)),
+        filter: (pattern, options = {}) => orig.filter(pattern, ext(def, options)),
+        defaults: (options) => orig.defaults(ext(def, options)),
+        makeRe: (pattern, options = {}) => orig.makeRe(pattern, ext(def, options)),
+        braceExpand: (pattern, options = {}) => orig.braceExpand(pattern, ext(def, options)),
+        match: (list, pattern, options = {}) => orig.match(list, pattern, ext(def, options)),
+        sep: orig.sep,
+        GLOBSTAR: GLOBSTAR,
+    });
+};
+minimatch.defaults = defaults;
+// Brace expansion:
+// a{b,c}d -> abd acd
+// a{b,}c -> abc ac
+// a{0..3}d -> a0d a1d a2d a3d
+// a{b,c{d,e}f}g -> abg acdfg acefg
+// a{b,c}d{e,f}g -> abdeg acdeg abdeg abdfg
+//
+// Invalid sets are not expanded.
+// a{2..}b -> a{2..}b
+// a{b}c -> a{b}c
+const braceExpand = (pattern, options = {}) => {
+    assertValidPattern(pattern);
+    // Thanks to Yeting Li <https://github.com/yetingli> for
+    // improving this regexp to avoid a ReDOS vulnerability.
+    if (options.nobrace || !/\{(?:(?!\{).)*\}/.test(pattern)) {
+        // shortcut. no need to expand.
+        return [pattern];
+    }
+    return brace_expansion(pattern);
+};
+minimatch.braceExpand = braceExpand;
+// parse a component of the expanded set.
+// At this point, no pattern may contain "/" in it
+// so we're going to return a 2d array, where each entry is the full
+// pattern, split on '/', and then turned into a regular expression.
+// A regexp is made at the end which joins each array with an
+// escaped /, and another full one which joins each regexp with |.
+//
+// Following the lead of Bash 4.1, note that "**" only has special meaning
+// when it is the *only* thing in a path portion.  Otherwise, any series
+// of * is equivalent to a single *.  Globstar behavior is enabled by
+// default, and can be disabled by setting options.noglobstar.
+const makeRe = (pattern, options = {}) => new Minimatch(pattern, options).makeRe();
+minimatch.makeRe = makeRe;
+const match = (list, pattern, options = {}) => {
+    const mm = new Minimatch(pattern, options);
+    list = list.filter(f => mm.match(f));
+    if (mm.options.nonull && !list.length) {
+        list.push(pattern);
+    }
+    return list;
+};
+minimatch.match = match;
+// replace stuff like \* with *
+const globMagic = /[?*]|[+@!]\(.*?\)|\[|\]/;
+const mjs_regExpEscape = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+class Minimatch {
+    options;
+    set;
+    pattern;
+    windowsPathsNoEscape;
+    nonegate;
+    negate;
+    comment;
+    empty;
+    preserveMultipleSlashes;
+    partial;
+    globSet;
+    globParts;
+    nocase;
+    isWindows;
+    platform;
+    windowsNoMagicRoot;
+    regexp;
+    constructor(pattern, options = {}) {
+        assertValidPattern(pattern);
+        options = options || {};
+        this.options = options;
+        this.pattern = pattern;
+        this.platform = options.platform || defaultPlatform;
+        this.isWindows = this.platform === 'win32';
+        this.windowsPathsNoEscape =
+            !!options.windowsPathsNoEscape || options.allowWindowsEscape === false;
+        if (this.windowsPathsNoEscape) {
+            this.pattern = this.pattern.replace(/\\/g, '/');
+        }
+        this.preserveMultipleSlashes = !!options.preserveMultipleSlashes;
+        this.regexp = null;
+        this.negate = false;
+        this.nonegate = !!options.nonegate;
+        this.comment = false;
+        this.empty = false;
+        this.partial = !!options.partial;
+        this.nocase = !!this.options.nocase;
+        this.windowsNoMagicRoot =
+            options.windowsNoMagicRoot !== undefined
+                ? options.windowsNoMagicRoot
+                : !!(this.isWindows && this.nocase);
+        this.globSet = [];
+        this.globParts = [];
+        this.set = [];
+        // make the set of regexps etc.
+        this.make();
+    }
+    hasMagic() {
+        if (this.options.magicalBraces && this.set.length > 1) {
+            return true;
+        }
+        for (const pattern of this.set) {
+            for (const part of pattern) {
+                if (typeof part !== 'string')
+                    return true;
+            }
+        }
+        return false;
+    }
+    debug(..._) { }
+    make() {
+        const pattern = this.pattern;
+        const options = this.options;
+        // empty patterns and comments match nothing.
+        if (!options.nocomment && pattern.charAt(0) === '#') {
+            this.comment = true;
+            return;
+        }
+        if (!pattern) {
+            this.empty = true;
+            return;
+        }
+        // step 1: figure out negation, etc.
+        this.parseNegate();
+        // step 2: expand braces
+        this.globSet = [...new Set(this.braceExpand())];
+        if (options.debug) {
+            this.debug = (...args) => console.error(...args);
+        }
+        this.debug(this.pattern, this.globSet);
+        // step 3: now we have a set, so turn each one into a series of
+        // path-portion matching patterns.
+        // These will be regexps, except in the case of "**", which is
+        // set to the GLOBSTAR object for globstar behavior,
+        // and will not contain any / characters
+        //
+        // First, we preprocess to make the glob pattern sets a bit simpler
+        // and deduped.  There are some perf-killing patterns that can cause
+        // problems with a glob walk, but we can simplify them down a bit.
+        const rawGlobParts = this.globSet.map(s => this.slashSplit(s));
+        this.globParts = this.preprocess(rawGlobParts);
+        this.debug(this.pattern, this.globParts);
+        // glob --> regexps
+        let set = this.globParts.map((s, _, __) => {
+            if (this.isWindows && this.windowsNoMagicRoot) {
+                // check if it's a drive or unc path.
+                const isUNC = s[0] === '' &&
+                    s[1] === '' &&
+                    (s[2] === '?' || !globMagic.test(s[2])) &&
+                    !globMagic.test(s[3]);
+                const isDrive = /^[a-z]:/i.test(s[0]);
+                if (isUNC) {
+                    return [...s.slice(0, 4), ...s.slice(4).map(ss => this.parse(ss))];
+                }
+                else if (isDrive) {
+                    return [s[0], ...s.slice(1).map(ss => this.parse(ss))];
+                }
+            }
+            return s.map(ss => this.parse(ss));
+        });
+        this.debug(this.pattern, set);
+        // filter out everything that didn't compile properly.
+        this.set = set.filter(s => s.indexOf(false) === -1);
+        // do not treat the ? in UNC paths as magic
+        if (this.isWindows) {
+            for (let i = 0; i < this.set.length; i++) {
+                const p = this.set[i];
+                if (p[0] === '' &&
+                    p[1] === '' &&
+                    this.globParts[i][2] === '?' &&
+                    typeof p[3] === 'string' &&
+                    /^[a-z]:$/i.test(p[3])) {
+                    p[2] = '?';
+                }
+            }
+        }
+        this.debug(this.pattern, this.set);
+    }
+    // various transforms to equivalent pattern sets that are
+    // faster to process in a filesystem walk.  The goal is to
+    // eliminate what we can, and push all ** patterns as far
+    // to the right as possible, even if it increases the number
+    // of patterns that we have to process.
+    preprocess(globParts) {
+        // if we're not in globstar mode, then turn all ** into *
+        if (this.options.noglobstar) {
+            for (let i = 0; i < globParts.length; i++) {
+                for (let j = 0; j < globParts[i].length; j++) {
+                    if (globParts[i][j] === '**') {
+                        globParts[i][j] = '*';
+                    }
+                }
+            }
+        }
+        const { optimizationLevel = 1 } = this.options;
+        if (optimizationLevel >= 2) {
+            // aggressive optimization for the purpose of fs walking
+            globParts = this.firstPhasePreProcess(globParts);
+            globParts = this.secondPhasePreProcess(globParts);
+        }
+        else if (optimizationLevel >= 1) {
+            // just basic optimizations to remove some .. parts
+            globParts = this.levelOneOptimize(globParts);
+        }
+        else {
+            globParts = this.adjascentGlobstarOptimize(globParts);
+        }
+        return globParts;
+    }
+    // just get rid of adjascent ** portions
+    adjascentGlobstarOptimize(globParts) {
+        return globParts.map(parts => {
+            let gs = -1;
+            while (-1 !== (gs = parts.indexOf('**', gs + 1))) {
+                let i = gs;
+                while (parts[i + 1] === '**') {
+                    i++;
+                }
+                if (i !== gs) {
+                    parts.splice(gs, i - gs);
+                }
+            }
+            return parts;
+        });
+    }
+    // get rid of adjascent ** and resolve .. portions
+    levelOneOptimize(globParts) {
+        return globParts.map(parts => {
+            parts = parts.reduce((set, part) => {
+                const prev = set[set.length - 1];
+                if (part === '**' && prev === '**') {
+                    return set;
+                }
+                if (part === '..') {
+                    if (prev && prev !== '..' && prev !== '.' && prev !== '**') {
+                        set.pop();
+                        return set;
+                    }
+                }
+                set.push(part);
+                return set;
+            }, []);
+            return parts.length === 0 ? [''] : parts;
+        });
+    }
+    levelTwoFileOptimize(parts) {
+        if (!Array.isArray(parts)) {
+            parts = this.slashSplit(parts);
+        }
+        let didSomething = false;
+        do {
+            didSomething = false;
+            // <pre>/<e>/<rest> -> <pre>/<rest>
+            if (!this.preserveMultipleSlashes) {
+                for (let i = 1; i < parts.length - 1; i++) {
+                    const p = parts[i];
+                    // don't squeeze out UNC patterns
+                    if (i === 1 && p === '' && parts[0] === '')
+                        continue;
+                    if (p === '.' || p === '') {
+                        didSomething = true;
+                        parts.splice(i, 1);
+                        i--;
+                    }
+                }
+                if (parts[0] === '.' &&
+                    parts.length === 2 &&
+                    (parts[1] === '.' || parts[1] === '')) {
+                    didSomething = true;
+                    parts.pop();
+                }
+            }
+            // <pre>/<p>/../<rest> -> <pre>/<rest>
+            let dd = 0;
+            while (-1 !== (dd = parts.indexOf('..', dd + 1))) {
+                const p = parts[dd - 1];
+                if (p && p !== '.' && p !== '..' && p !== '**') {
+                    didSomething = true;
+                    parts.splice(dd - 1, 2);
+                    dd -= 2;
+                }
+            }
+        } while (didSomething);
+        return parts.length === 0 ? [''] : parts;
+    }
+    // First phase: single-pattern processing
+    // <pre> is 1 or more portions
+    // <rest> is 1 or more portions
+    // <p> is any portion other than ., .., '', or **
+    // <e> is . or ''
+    //
+    // **/.. is *brutal* for filesystem walking performance, because
+    // it effectively resets the recursive walk each time it occurs,
+    // and ** cannot be reduced out by a .. pattern part like a regexp
+    // or most strings (other than .., ., and '') can be.
+    //
+    // <pre>/**/../<p>/<p>/<rest> -> {<pre>/../<p>/<p>/<rest>,<pre>/**/<p>/<p>/<rest>}
+    // <pre>/<e>/<rest> -> <pre>/<rest>
+    // <pre>/<p>/../<rest> -> <pre>/<rest>
+    // **/**/<rest> -> **/<rest>
+    //
+    // **/*/<rest> -> */**/<rest> <== not valid because ** doesn't follow
+    // this WOULD be allowed if ** did follow symlinks, or * didn't
+    firstPhasePreProcess(globParts) {
+        let didSomething = false;
+        do {
+            didSomething = false;
+            // <pre>/**/../<p>/<p>/<rest> -> {<pre>/../<p>/<p>/<rest>,<pre>/**/<p>/<p>/<rest>}
+            for (let parts of globParts) {
+                let gs = -1;
+                while (-1 !== (gs = parts.indexOf('**', gs + 1))) {
+                    let gss = gs;
+                    while (parts[gss + 1] === '**') {
+                        // <pre>/**/**/<rest> -> <pre>/**/<rest>
+                        gss++;
+                    }
+                    // eg, if gs is 2 and gss is 4, that means we have 3 **
+                    // parts, and can remove 2 of them.
+                    if (gss > gs) {
+                        parts.splice(gs + 1, gss - gs);
+                    }
+                    let next = parts[gs + 1];
+                    const p = parts[gs + 2];
+                    const p2 = parts[gs + 3];
+                    if (next !== '..')
+                        continue;
+                    if (!p ||
+                        p === '.' ||
+                        p === '..' ||
+                        !p2 ||
+                        p2 === '.' ||
+                        p2 === '..') {
+                        continue;
+                    }
+                    didSomething = true;
+                    // edit parts in place, and push the new one
+                    parts.splice(gs, 1);
+                    const other = parts.slice(0);
+                    other[gs] = '**';
+                    globParts.push(other);
+                    gs--;
+                }
+                // <pre>/<e>/<rest> -> <pre>/<rest>
+                if (!this.preserveMultipleSlashes) {
+                    for (let i = 1; i < parts.length - 1; i++) {
+                        const p = parts[i];
+                        // don't squeeze out UNC patterns
+                        if (i === 1 && p === '' && parts[0] === '')
+                            continue;
+                        if (p === '.' || p === '') {
+                            didSomething = true;
+                            parts.splice(i, 1);
+                            i--;
+                        }
+                    }
+                    if (parts[0] === '.' &&
+                        parts.length === 2 &&
+                        (parts[1] === '.' || parts[1] === '')) {
+                        didSomething = true;
+                        parts.pop();
+                    }
+                }
+                // <pre>/<p>/../<rest> -> <pre>/<rest>
+                let dd = 0;
+                while (-1 !== (dd = parts.indexOf('..', dd + 1))) {
+                    const p = parts[dd - 1];
+                    if (p && p !== '.' && p !== '..' && p !== '**') {
+                        didSomething = true;
+                        const needDot = dd === 1 && parts[dd + 1] === '**';
+                        const splin = needDot ? ['.'] : [];
+                        parts.splice(dd - 1, 2, ...splin);
+                        if (parts.length === 0)
+                            parts.push('');
+                        dd -= 2;
+                    }
+                }
+            }
+        } while (didSomething);
+        return globParts;
+    }
+    // second phase: multi-pattern dedupes
+    // {<pre>/*/<rest>,<pre>/<p>/<rest>} -> <pre>/*/<rest>
+    // {<pre>/<rest>,<pre>/<rest>} -> <pre>/<rest>
+    // {<pre>/**/<rest>,<pre>/<rest>} -> <pre>/**/<rest>
+    //
+    // {<pre>/**/<rest>,<pre>/**/<p>/<rest>} -> <pre>/**/<rest>
+    // ^-- not valid because ** doens't follow symlinks
+    secondPhasePreProcess(globParts) {
+        for (let i = 0; i < globParts.length - 1; i++) {
+            for (let j = i + 1; j < globParts.length; j++) {
+                const matched = this.partsMatch(globParts[i], globParts[j], !this.preserveMultipleSlashes);
+                if (!matched)
+                    continue;
+                globParts[i] = matched;
+                globParts[j] = [];
+            }
+        }
+        return globParts.filter(gs => gs.length);
+    }
+    partsMatch(a, b, emptyGSMatch = false) {
+        let ai = 0;
+        let bi = 0;
+        let result = [];
+        let which = '';
+        while (ai < a.length && bi < b.length) {
+            if (a[ai] === b[bi]) {
+                result.push(which === 'b' ? b[bi] : a[ai]);
+                ai++;
+                bi++;
+            }
+            else if (emptyGSMatch && a[ai] === '**' && b[bi] === a[ai + 1]) {
+                result.push(a[ai]);
+                ai++;
+            }
+            else if (emptyGSMatch && b[bi] === '**' && a[ai] === b[bi + 1]) {
+                result.push(b[bi]);
+                bi++;
+            }
+            else if (a[ai] === '*' &&
+                b[bi] &&
+                (this.options.dot || !b[bi].startsWith('.')) &&
+                b[bi] !== '**') {
+                if (which === 'b')
+                    return false;
+                which = 'a';
+                result.push(a[ai]);
+                ai++;
+                bi++;
+            }
+            else if (b[bi] === '*' &&
+                a[ai] &&
+                (this.options.dot || !a[ai].startsWith('.')) &&
+                a[ai] !== '**') {
+                if (which === 'a')
+                    return false;
+                which = 'b';
+                result.push(b[bi]);
+                ai++;
+                bi++;
+            }
+            else {
+                return false;
+            }
+        }
+        // if we fall out of the loop, it means they two are identical
+        // as long as their lengths match
+        return a.length === b.length && result;
+    }
+    parseNegate() {
+        if (this.nonegate)
+            return;
+        const pattern = this.pattern;
+        let negate = false;
+        let negateOffset = 0;
+        for (let i = 0; i < pattern.length && pattern.charAt(i) === '!'; i++) {
+            negate = !negate;
+            negateOffset++;
+        }
+        if (negateOffset)
+            this.pattern = pattern.slice(negateOffset);
+        this.negate = negate;
+    }
+    // set partial to true to test if, for example,
+    // "/a/b" matches the start of "/*/b/*/d"
+    // Partial means, if you run out of file before you run
+    // out of pattern, then that's fine, as long as all
+    // the parts match.
+    matchOne(file, pattern, partial = false) {
+        const options = this.options;
+        // a UNC pattern like //?/c:/* can match a path like c:/x
+        // and vice versa
+        if (this.isWindows) {
+            const fileUNC = file[0] === '' &&
+                file[1] === '' &&
+                file[2] === '?' &&
+                typeof file[3] === 'string' &&
+                /^[a-z]:$/i.test(file[3]);
+            const patternUNC = pattern[0] === '' &&
+                pattern[1] === '' &&
+                pattern[2] === '?' &&
+                typeof pattern[3] === 'string' &&
+                /^[a-z]:$/i.test(pattern[3]);
+            if (fileUNC && patternUNC) {
+                const fd = file[3];
+                const pd = pattern[3];
+                if (fd.toLowerCase() === pd.toLowerCase()) {
+                    file[3] = pd;
+                }
+            }
+            else if (patternUNC && typeof file[0] === 'string') {
+                const pd = pattern[3];
+                const fd = file[0];
+                if (pd.toLowerCase() === fd.toLowerCase()) {
+                    pattern[3] = fd;
+                    pattern = pattern.slice(3);
+                }
+            }
+            else if (fileUNC && typeof pattern[0] === 'string') {
+                const fd = file[3];
+                if (fd.toLowerCase() === pattern[0].toLowerCase()) {
+                    pattern[0] = fd;
+                    file = file.slice(3);
+                }
+            }
+        }
+        // resolve and reduce . and .. portions in the file as well.
+        // dont' need to do the second phase, because it's only one string[]
+        const { optimizationLevel = 1 } = this.options;
+        if (optimizationLevel >= 2) {
+            file = this.levelTwoFileOptimize(file);
+        }
+        this.debug('matchOne', this, { file, pattern });
+        this.debug('matchOne', file.length, pattern.length);
+        for (var fi = 0, pi = 0, fl = file.length, pl = pattern.length; fi < fl && pi < pl; fi++, pi++) {
+            this.debug('matchOne loop');
+            var p = pattern[pi];
+            var f = file[fi];
+            this.debug(pattern, p, f);
+            // should be impossible.
+            // some invalid regexp stuff in the set.
+            /* c8 ignore start */
+            if (p === false) {
+                return false;
+            }
+            /* c8 ignore stop */
+            if (p === GLOBSTAR) {
+                this.debug('GLOBSTAR', [pattern, p, f]);
+                // "**"
+                // a/**/b/**/c would match the following:
+                // a/b/x/y/z/c
+                // a/x/y/z/b/c
+                // a/b/x/b/x/c
+                // a/b/c
+                // To do this, take the rest of the pattern after
+                // the **, and see if it would match the file remainder.
+                // If so, return success.
+                // If not, the ** "swallows" a segment, and try again.
+                // This is recursively awful.
+                //
+                // a/**/b/**/c matching a/b/x/y/z/c
+                // - a matches a
+                // - doublestar
+                //   - matchOne(b/x/y/z/c, b/**/c)
+                //     - b matches b
+                //     - doublestar
+                //       - matchOne(x/y/z/c, c) -> no
+                //       - matchOne(y/z/c, c) -> no
+                //       - matchOne(z/c, c) -> no
+                //       - matchOne(c, c) yes, hit
+                var fr = fi;
+                var pr = pi + 1;
+                if (pr === pl) {
+                    this.debug('** at the end');
+                    // a ** at the end will just swallow the rest.
+                    // We have found a match.
+                    // however, it will not swallow /.x, unless
+                    // options.dot is set.
+                    // . and .. are *never* matched by **, for explosively
+                    // exponential reasons.
+                    for (; fi < fl; fi++) {
+                        if (file[fi] === '.' ||
+                            file[fi] === '..' ||
+                            (!options.dot && file[fi].charAt(0) === '.'))
+                            return false;
+                    }
+                    return true;
+                }
+                // ok, let's see if we can swallow whatever we can.
+                while (fr < fl) {
+                    var swallowee = file[fr];
+                    this.debug('\nglobstar while', file, fr, pattern, pr, swallowee);
+                    // XXX remove this slice.  Just pass the start index.
+                    if (this.matchOne(file.slice(fr), pattern.slice(pr), partial)) {
+                        this.debug('globstar found match!', fr, fl, swallowee);
+                        // found a match.
+                        return true;
+                    }
+                    else {
+                        // can't swallow "." or ".." ever.
+                        // can only swallow ".foo" when explicitly asked.
+                        if (swallowee === '.' ||
+                            swallowee === '..' ||
+                            (!options.dot && swallowee.charAt(0) === '.')) {
+                            this.debug('dot detected!', file, fr, pattern, pr);
+                            break;
+                        }
+                        // ** swallows a segment, and continue.
+                        this.debug('globstar swallow a segment, and continue');
+                        fr++;
+                    }
+                }
+                // no match was found.
+                // However, in partial mode, we can't say this is necessarily over.
+                /* c8 ignore start */
+                if (partial) {
+                    // ran out of file
+                    this.debug('\n>>> no match, partial?', file, fr, pattern, pr);
+                    if (fr === fl) {
+                        return true;
+                    }
+                }
+                /* c8 ignore stop */
+                return false;
+            }
+            // something other than **
+            // non-magic patterns just have to match exactly
+            // patterns with magic have been turned into regexps.
+            let hit;
+            if (typeof p === 'string') {
+                hit = f === p;
+                this.debug('string match', p, f, hit);
+            }
+            else {
+                hit = p.test(f);
+                this.debug('pattern match', p, f, hit);
+            }
+            if (!hit)
+                return false;
+        }
+        // Note: ending in / means that we'll get a final ""
+        // at the end of the pattern.  This can only match a
+        // corresponding "" at the end of the file.
+        // If the file ends in /, then it can only match a
+        // a pattern that ends in /, unless the pattern just
+        // doesn't have any more for it. But, a/b/ should *not*
+        // match "a/b/*", even though "" matches against the
+        // [^/]*? pattern, except in partial mode, where it might
+        // simply not be reached yet.
+        // However, a/b/ should still satisfy a/*
+        // now either we fell off the end of the pattern, or we're done.
+        if (fi === fl && pi === pl) {
+            // ran out of pattern and filename at the same time.
+            // an exact hit!
+            return true;
+        }
+        else if (fi === fl) {
+            // ran out of file, but still had pattern left.
+            // this is ok if we're doing the match as part of
+            // a glob fs traversal.
+            return partial;
+        }
+        else if (pi === pl) {
+            // ran out of pattern, still have file left.
+            // this is only acceptable if we're on the very last
+            // empty segment of a file with a trailing slash.
+            // a/* should match a/b/
+            return fi === fl - 1 && file[fi] === '';
+            /* c8 ignore start */
+        }
+        else {
+            // should be unreachable.
+            throw new Error('wtf?');
+        }
+        /* c8 ignore stop */
+    }
+    braceExpand() {
+        return braceExpand(this.pattern, this.options);
+    }
+    parse(pattern) {
+        assertValidPattern(pattern);
+        const options = this.options;
+        // shortcuts
+        if (pattern === '**')
+            return GLOBSTAR;
+        if (pattern === '')
+            return '';
+        // far and away, the most common glob pattern parts are
+        // *, *.*, and *.<ext>  Add a fast check method for those.
+        let m;
+        let fastTest = null;
+        if ((m = pattern.match(starRE))) {
+            fastTest = options.dot ? starTestDot : starTest;
+        }
+        else if ((m = pattern.match(starDotExtRE))) {
+            fastTest = (options.nocase
+                ? options.dot
+                    ? starDotExtTestNocaseDot
+                    : starDotExtTestNocase
+                : options.dot
+                    ? starDotExtTestDot
+                    : starDotExtTest)(m[1]);
+        }
+        else if ((m = pattern.match(qmarksRE))) {
+            fastTest = (options.nocase
+                ? options.dot
+                    ? qmarksTestNocaseDot
+                    : qmarksTestNocase
+                : options.dot
+                    ? qmarksTestDot
+                    : qmarksTest)(m);
+        }
+        else if ((m = pattern.match(starDotStarRE))) {
+            fastTest = options.dot ? starDotStarTestDot : starDotStarTest;
+        }
+        else if ((m = pattern.match(dotStarRE))) {
+            fastTest = dotStarTest;
+        }
+        const re = AST.fromGlob(pattern, this.options).toMMPattern();
+        return fastTest ? Object.assign(re, { test: fastTest }) : re;
+    }
+    makeRe() {
+        if (this.regexp || this.regexp === false)
+            return this.regexp;
+        // at this point, this.set is a 2d array of partial
+        // pattern strings, or "**".
+        //
+        // It's better to use .match().  This function shouldn't
+        // be used, really, but it's pretty convenient sometimes,
+        // when you just want to work with a regex.
+        const set = this.set;
+        if (!set.length) {
+            this.regexp = false;
+            return this.regexp;
+        }
+        const options = this.options;
+        const twoStar = options.noglobstar
+            ? mjs_star
+            : options.dot
+                ? twoStarDot
+                : twoStarNoDot;
+        const flags = new Set(options.nocase ? ['i'] : []);
+        // regexpify non-globstar patterns
+        // if ** is only item, then we just do one twoStar
+        // if ** is first, and there are more, prepend (\/|twoStar\/)? to next
+        // if ** is last, append (\/twoStar|) to previous
+        // if ** is in the middle, append (\/|\/twoStar\/) to previous
+        // then filter out GLOBSTAR symbols
+        let re = set
+            .map(pattern => {
+            const pp = pattern.map(p => {
+                if (p instanceof RegExp) {
+                    for (const f of p.flags.split(''))
+                        flags.add(f);
+                }
+                return typeof p === 'string'
+                    ? mjs_regExpEscape(p)
+                    : p === GLOBSTAR
+                        ? GLOBSTAR
+                        : p._src;
+            });
+            pp.forEach((p, i) => {
+                const next = pp[i + 1];
+                const prev = pp[i - 1];
+                if (p !== GLOBSTAR || prev === GLOBSTAR) {
+                    return;
+                }
+                if (prev === undefined) {
+                    if (next !== undefined && next !== GLOBSTAR) {
+                        pp[i + 1] = '(?:\\/|' + twoStar + '\\/)?' + next;
+                    }
+                    else {
+                        pp[i] = twoStar;
+                    }
+                }
+                else if (next === undefined) {
+                    pp[i - 1] = prev + '(?:\\/|' + twoStar + ')?';
+                }
+                else if (next !== GLOBSTAR) {
+                    pp[i - 1] = prev + '(?:\\/|\\/' + twoStar + '\\/)' + next;
+                    pp[i + 1] = GLOBSTAR;
+                }
+            });
+            return pp.filter(p => p !== GLOBSTAR).join('/');
+        })
+            .join('|');
+        // need to wrap in parens if we had more than one thing with |,
+        // otherwise only the first will be anchored to ^ and the last to $
+        const [open, close] = set.length > 1 ? ['(?:', ')'] : ['', ''];
+        // must match entire pattern
+        // ending in a * or ** will make it less strict.
+        re = '^' + open + re + close + '$';
+        // can match anything, as long as it's not this.
+        if (this.negate)
+            re = '^(?!' + re + ').+$';
+        try {
+            this.regexp = new RegExp(re, [...flags].join(''));
+            /* c8 ignore start */
+        }
+        catch (ex) {
+            // should be impossible
+            this.regexp = false;
+        }
+        /* c8 ignore stop */
+        return this.regexp;
+    }
+    slashSplit(p) {
+        // if p starts with // on windows, we preserve that
+        // so that UNC paths aren't broken.  Otherwise, any number of
+        // / characters are coalesced into one, unless
+        // preserveMultipleSlashes is set to true.
+        if (this.preserveMultipleSlashes) {
+            return p.split('/');
+        }
+        else if (this.isWindows && /^\/\/[^\/]+/.test(p)) {
+            // add an extra '' for the one we lose
+            return ['', ...p.split(/\/+/)];
+        }
+        else {
+            return p.split(/\/+/);
+        }
+    }
+    match(f, partial = this.partial) {
+        this.debug('match', f, this.pattern);
+        // short-circuit in the case of busted things.
+        // comments, etc.
+        if (this.comment) {
+            return false;
+        }
+        if (this.empty) {
+            return f === '';
+        }
+        if (f === '/' && partial) {
+            return true;
+        }
+        const options = this.options;
+        // windows: need to use /, not \
+        if (this.isWindows) {
+            f = f.split('\\').join('/');
+        }
+        // treat the test path as a set of pathparts.
+        const ff = this.slashSplit(f);
+        this.debug(this.pattern, 'split', ff);
+        // just ONE of the pattern sets in this.set needs to match
+        // in order for it to be valid.  If negating, then just one
+        // match means that we have failed.
+        // Either way, return on the first hit.
+        const set = this.set;
+        this.debug(this.pattern, 'set', set);
+        // Find the basename of the path by looking for the last non-empty segment
+        let filename = ff[ff.length - 1];
+        if (!filename) {
+            for (let i = ff.length - 2; !filename && i >= 0; i--) {
+                filename = ff[i];
+            }
+        }
+        for (let i = 0; i < set.length; i++) {
+            const pattern = set[i];
+            let file = ff;
+            if (options.matchBase && pattern.length === 1) {
+                file = [filename];
+            }
+            const hit = this.matchOne(file, pattern, partial);
+            if (hit) {
+                if (options.flipNegate) {
+                    return true;
+                }
+                return !this.negate;
+            }
+        }
+        // didn't get any hits.  this is success if it's a negative
+        // pattern, failure otherwise.
+        if (options.flipNegate) {
+            return false;
+        }
+        return this.negate;
+    }
+    static defaults(def) {
+        return minimatch.defaults(def).Minimatch;
+    }
+}
+/* c8 ignore start */
+
+
+
+/* c8 ignore stop */
+minimatch.AST = AST;
+minimatch.Minimatch = Minimatch;
+minimatch.escape = escape_escape;
+minimatch.unescape = unescape_unescape;
+//# sourceMappingURL=index.js.map
+// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
+var core = __nccwpck_require__(2186);
+;// CONCATENATED MODULE: ./src/constants.ts
 const extensionToLanguageMap = {
     js: 'javascript',
     ts: 'typescript',
@@ -44130,119 +45905,3809 @@ const extensionToLanguageMap = {
     other: ""
 };
 const systemPrompt = 'Act as an empathetic software engineer who is an expert in designing and developing React based frontend softwares based on Redux Middleware and Saga framework and adhering to best practices of software architecture.';
-const instructionsPromptPrefix = `Your task is to review a Pull Request. You will receive a git diff.
-Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities. Check it adheres to the following coding standards and guidelines:`;
-const instructionsPromptSuffix = `Write your reply and examples in GitHub Markdown format.
+const instructionsPrompt = `Your task is to review a Pull Request. You will receive a git diff.
+Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities. Check it adheres to the following coding standards and guidelines:
+1. Redux Setup:
+a.Check that Redux is set up correctly with reducers, actions, and the store.
+b.Verify that action types are defined as constants and are consistent across the application.
+c.Ensure that action creators are used to encapsulate action logic and avoid direct manipulation of action objects.
+2. Redux Middleware:
+a.Review the usage of Redux Middleware for tasks such as logging, error handling, or asynchronous operations.
+b.Ensure that middleware functions are pure and do not cause side effects unrelated to Redux state management.
+c.Check for proper error handling in middleware to prevent application crashes and provide meaningful error messages to users.
+3. Saga Implementation:
+a.Evaluate the usage of Redux Saga for handling asynchronous logic and side effects.
+b.Verify that sagas are structured appropriately, with clear separation of concerns and minimal coupling between sagas.
+c.Check for proper error handling in sagas, including handling of failed API requests and other asynchronous operations.
+4.Component Architecture:
+a.Review the component architecture to ensure adherence to best practices and maintainability.
+b.Check for proper separation of container and presentational components, with container components responsible for connecting to Redux and managing state.
+c.Ensure that components are reusable, composable, and focused on a single responsibility.
+5.State Management:
+a.Evaluate the usage of Redux for state management, considering factors such as the size and complexity of the application.
+b.Check for appropriate normalization of state, especially for nested or relational data structures.
+c.Verify that selectors are used to derive derived data from the Redux store efficiently.
+6.Code Organization and Structure:
+a.Check that the project structure follows best practices and is organized logically.
+b.Ensure that files and folders are named descriptively and consistently.
+c.Verify that code is modular and follows the single responsibility principle, with each module responsible for a specific feature or functionality.
+7.Error Handling:
+a.Evaluate error handling mechanisms throughout the codebase, including in Redux actions, reducers, middleware, and sagas.
+b.Check for consistent error handling patterns and ensure that errors are handled gracefully to prevent application crashes and provide a good user experience.
+8.Performance Optimization:
+a. Review code for potential performance bottlenecks and inefficiencies.
+b. Check for unnecessary re-renders in React components and identify opportunities for optimization using techniques such as memoization and PureComponent.
+c. Evaluate the usage of Redux selectors and memoization to improve performance when accessing derived data from the store.
+9.Testing:
+a.Verify that the codebase is adequately covered by unit tests, integration tests, and end-to-end tests.
+b.Check for proper mocking of external dependencies, such as APIs and services, in tests to ensure isolation and reproducibility.
+c.Evaluate test coverage and identify areas where additional tests are needed to improve code quality and reliability.
+10.Documentation and Comments:
+a.Ensure that code is well-documented with comments, especially for complex logic or algorithms.
+b.Check that documentation is up-to-date and accurately reflects the behavior and usage of functions, components, and modules.
+c.Encourage the use of README files and other documentation to provide an overview of the project structure, architecture, and development workflow.
+
+Write your reply and examples in GitHub Markdown format.
 The programming language in the git diff is {lang}.
+
     git diff to review
+
     {diff}`;
 
+// EXTERNAL MODULE: ./node_modules/effect/dist/esm/Context.js
+var Context = __nccwpck_require__(3440);
+// EXTERNAL MODULE: ./node_modules/effect/dist/esm/Effect.js + 6 modules
+var esm_Effect = __nccwpck_require__(2732);
+// EXTERNAL MODULE: ./node_modules/effect/dist/esm/Option.js
+var Option = __nccwpck_require__(3813);
+// EXTERNAL MODULE: ./node_modules/effect/dist/esm/Layer.js + 1 modules
+var Layer = __nccwpck_require__(8933);
+// EXTERNAL MODULE: ./node_modules/effect/dist/esm/internal/schedule.js + 3 modules
+var schedule = __nccwpck_require__(7718);
+;// CONCATENATED MODULE: ./node_modules/effect/dist/esm/Schedule.js
 
-/***/ }),
+/**
+ * @since 2.0.0
+ * @category symbols
+ */
+const ScheduleTypeId = schedule/* ScheduleTypeId */.qY;
+/**
+ * @since 2.0.0
+ * @category symbols
+ */
+const ScheduleDriverTypeId = schedule/* ScheduleDriverTypeId */.Yh;
+/**
+ * Constructs a new `Schedule` with the specified `initial` state and the
+ * specified `step` function.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const makeWithState = schedule/* makeWithState */.mw;
+/**
+ * Returns a new schedule with the given delay added to every interval defined
+ * by this schedule.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const addDelay = schedule/* addDelay */.wL;
+/**
+ * Returns a new schedule with the given effectfully computed delay added to
+ * every interval defined by this schedule.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const addDelayEffect = schedule/* addDelayEffect */.cH;
+/**
+ * The same as `andThenEither`, but merges the output.
+ *
+ * @since 2.0.0
+ * @category sequencing
+ */
+const andThen = schedule/* andThen */.Po;
+/**
+ * Returns a new schedule that first executes this schedule to completion, and
+ * then executes the specified schedule to completion.
+ *
+ * @since 2.0.0
+ * @category sequencing
+ */
+const andThenEither = schedule/* andThenEither */.LZ;
+/**
+ * Returns a new schedule that maps this schedule to a constant output.
+ *
+ * @since 2.0.0
+ * @category mapping
+ */
+const as = schedule.as;
+/**
+ * Returns a new schedule that maps the output of this schedule to unit.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const asVoid = schedule/* asVoid */.a2;
+/**
+ * Returns a new schedule that has both the inputs and outputs of this and the
+ * specified schedule.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const bothInOut = schedule/* bothInOut */.E;
+/**
+ * Returns a new schedule that passes each input and output of this schedule
+ * to the specified function, and then determines whether or not to continue
+ * based on the return value of the function.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const check = schedule/* check */.BF;
+/**
+ * Returns a new schedule that passes each input and output of this schedule
+ * to the specified function, and then determines whether or not to continue
+ * based on the return value of the function.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const checkEffect = schedule/* checkEffect */.vl;
+/**
+ * A schedule that recurs anywhere, collecting all inputs into a `Chunk`.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const collectAllInputs = schedule/* collectAllInputs */.G_;
+/**
+ * Returns a new schedule that collects the outputs of this one into a chunk.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const collectAllOutputs = schedule/* collectAllOutputs */.ED;
+/**
+ * A schedule that recurs until the condition f fails, collecting all inputs
+ * into a list.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const collectUntil = schedule/* collectUntil */.cX;
+/**
+ * A schedule that recurs until the effectful condition f fails, collecting
+ * all inputs into a list.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const collectUntilEffect = schedule/* collectUntilEffect */.ZN;
+/**
+ * A schedule that recurs as long as the condition f holds, collecting all
+ * inputs into a list.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const collectWhile = schedule/* collectWhile */.gK;
+/**
+ * A schedule that recurs as long as the effectful condition holds, collecting
+ * all inputs into a list.
+ *
+ * @category utils
+ * @since 2.0.0
+ */
+const collectWhileEffect = schedule/* collectWhileEffect */.DB;
+/**
+ * Returns the composition of this schedule and the specified schedule, by
+ * piping the output of this one into the input of the other. Effects
+ * described by this schedule will always be executed before the effects
+ * described by the second schedule.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const compose = schedule/* compose */.qC;
+/**
+ * Returns a new schedule that deals with a narrower class of inputs than this
+ * schedule.
+ *
+ * @since 2.0.0
+ * @category mapping
+ */
+const mapInput = schedule/* mapInput */.$H;
+/**
+ * Transforms the context being provided to this schedule with the
+ * specified function.
+ *
+ * @since 2.0.0
+ * @category context
+ */
+const mapInputContext = schedule/* mapInputContext */.nP;
+/**
+ * Returns a new schedule that deals with a narrower class of inputs than this
+ * schedule.
+ *
+ * @since 2.0.0
+ * @category mapping
+ */
+const mapInputEffect = schedule/* mapInputEffect */.wD;
+/**
+ * A schedule that always recurs, which counts the number of recurrences.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const count = schedule/* count */.QX;
+/**
+ * Cron schedule that recurs every `minute` that matches the schedule.
+ *
+ * It triggers at zero second of the minute. Producing the timestamps of the cron window.
+ *
+ * NOTE: `expression` parameter is validated lazily. Must be a valid cron expression.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const cron = schedule/* cron */.De;
+/**
+ * Cron-like schedule that recurs every specified `day` of month. Won't recur
+ * on months containing less days than specified in `day` param.
+ *
+ * It triggers at zero hour of the day. Producing a count of repeats: 0, 1, 2.
+ *
+ * NOTE: `day` parameter is validated lazily. Must be in range 1...31.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const dayOfMonth = schedule/* dayOfMonth */.KY;
+/**
+ * Cron-like schedule that recurs every specified `day` of each week. It
+ * triggers at zero hour of the week. Producing a count of repeats: 0, 1, 2.
+ *
+ * NOTE: `day` parameter is validated lazily. Must be in range 1 (Monday)...7
+ * (Sunday).
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const dayOfWeek = schedule/* dayOfWeek */.ds;
+/**
+ * Returns a new schedule with the specified effectfully computed delay added
+ * before the start of each interval produced by this schedule.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const delayed = schedule/* delayed */.A8;
+/**
+ * Returns a new schedule with the specified effectfully computed delay added
+ * before the start of each interval produced by this schedule.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const delayedEffect = schedule/* delayedEffect */.Ui;
+/**
+ * Takes a schedule that produces a delay, and returns a new schedule that
+ * uses this delay to further delay intervals in the resulting schedule.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const delayedSchedule = schedule/* delayedSchedule */.pN;
+/**
+ * Returns a new schedule that outputs the delay between each occurence.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const delays = schedule/* delays */.ih;
+/**
+ * Returns a new schedule that maps both the input and output.
+ *
+ * @since 2.0.0
+ * @category mapping
+ */
+const mapBoth = schedule/* mapBoth */.SA;
+/**
+ * Returns a new schedule that maps both the input and output.
+ *
+ * @since 2.0.0
+ * @category mapping
+ */
+const mapBothEffect = schedule/* mapBothEffect */.lK;
+/**
+ * Returns a driver that can be used to step the schedule, appropriately
+ * handling sleeping.
+ *
+ * @since 2.0.0
+ * @category getter
+ */
+const driver = schedule/* driver */.vC;
+/**
+ * A schedule that can recur one time, the specified amount of time into the
+ * future.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const duration = schedule/* duration */.x9;
+/**
+ * Returns a new schedule that performs a geometric union on the intervals
+ * defined by both schedules.
+ *
+ * @since 2.0.0
+ * @category alternatives
+ */
+const either = schedule/* either */.wE;
+/**
+ * The same as `either` followed by `map`.
+ *
+ * @since 2.0.0
+ * @category alternatives
+ */
+const eitherWith = schedule/* eitherWith */.EA;
+/**
+ * A schedule that occurs everywhere, which returns the total elapsed duration
+ * since the first step.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const elapsed = schedule/* elapsed */._J;
+/**
+ * Returns a new schedule that will run the specified finalizer as soon as the
+ * schedule is complete. Note that unlike `Effect.ensuring`, this method does not
+ * guarantee the finalizer will be run. The `Schedule` may not initialize or
+ * the driver of the schedule may not run to completion. However, if the
+ * `Schedule` ever decides not to continue, then the finalizer will be run.
+ *
+ * @since 2.0.0
+ * @category finalization
+ */
+const ensuring = schedule/* ensuring */.IH;
+/**
+ * A schedule that always recurs, but will wait a certain amount between
+ * repetitions, given by `base * factor.pow(n)`, where `n` is the number of
+ * repetitions so far. Returns the current duration between recurrences.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const exponential = schedule/* exponential */.J9;
+/**
+ * A schedule that always recurs, increasing delays by summing the preceding
+ * two delays (similar to the fibonacci sequence). Returns the current
+ * duration between recurrences.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const fibonacci = schedule/* fibonacci */.pq;
+/**
+ * A schedule that recurs on a fixed interval. Returns the number of
+ * repetitions of the schedule so far.
+ *
+ * If the action run between updates takes longer than the interval, then the
+ * action will be run immediately, but re-runs will not "pile up".
+ *
+ * ```
+ * |-----interval-----|-----interval-----|-----interval-----|
+ * |---------action--------||action|-----|action|-----------|
+ * ```
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const fixed = schedule/* fixed */.Bd;
+/**
+ * A schedule that always recurs, producing a count of repeats: 0, 1, 2.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const forever = schedule/* forever */.Yo;
+/**
+ * A schedule that recurs once with the specified delay.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const fromDelay = schedule/* fromDelay */.tS;
+/**
+ * A schedule that recurs once for each of the specified durations, delaying
+ * each time for the length of the specified duration. Returns the length of
+ * the current duration between recurrences.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const fromDelays = schedule/* fromDelays */.iK;
+/**
+ * A schedule that always recurs, mapping input values through the specified
+ * function.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const fromFunction = schedule/* fromFunction */.iT;
+/**
+ * Cron-like schedule that recurs every specified `hour` of each day. It
+ * triggers at zero minute of the hour. Producing a count of repeats: 0, 1, 2.
+ *
+ * NOTE: `hour` parameter is validated lazily. Must be in range 0...23.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const hourOfDay = schedule/* hourOfDay */.lk;
+/**
+ * A schedule that always recurs, which returns inputs as outputs.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const identity = schedule/* identity */.yR;
+/**
+ * Returns a new schedule that performs a geometric intersection on the
+ * intervals defined by both schedules.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const intersect = schedule/* intersect */.wf;
+/**
+ * Returns a new schedule that combines this schedule with the specified
+ * schedule, continuing as long as both schedules want to continue and merging
+ * the next intervals according to the specified merge function.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const intersectWith = schedule/* intersectWith */.i7;
+/**
+ * Returns a new schedule that randomly modifies the size of the intervals of
+ * this schedule.
+ *
+ * Defaults `min` to `0.8` and `max` to `1.2`.
+ *
+ * The new interval size is between `min * old interval size` and `max * old
+ * interval size`.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const jittered = schedule/* jittered */.Ek;
+/**
+ * Returns a new schedule that randomly modifies the size of the intervals of
+ * this schedule.
+ *
+ * The new interval size is between `min * old interval size` and `max * old
+ * interval size`.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const jitteredWith = schedule/* jitteredWith */.a9;
+/**
+ * A schedule that always recurs, but will repeat on a linear time interval,
+ * given by `base * n` where `n` is the number of repetitions so far. Returns
+ * the current duration between recurrences.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const linear = schedule/* linear */.GE;
+/**
+ * Returns a new schedule that maps the output of this schedule through the
+ * specified function.
+ *
+ * @since 2.0.0
+ * @category mapping
+ */
+const map = schedule/* map */.UI;
+/**
+ * Returns a new schedule that maps the output of this schedule through the
+ * specified effectful function.
+ *
+ * @since 2.0.0
+ * @category mapping
+ */
+const mapEffect = schedule/* mapEffect */.J1;
+/**
+ * Cron-like schedule that recurs every specified `minute` of each hour. It
+ * triggers at zero second of the minute. Producing a count of repeats: 0, 1,
+ * 2.
+ *
+ * NOTE: `minute` parameter is validated lazily. Must be in range 0...59.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const minuteOfHour = schedule/* minuteOfHour */.MY;
+/**
+ * Returns a new schedule that modifies the delay using the specified
+ * function.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const modifyDelay = schedule/* modifyDelay */.vr;
+/**
+ * Returns a new schedule that modifies the delay using the specified
+ * effectual function.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const modifyDelayEffect = schedule/* modifyDelayEffect */.Ug;
+/**
+ * Returns a new schedule that applies the current one but runs the specified
+ * effect for every decision of this schedule. This can be used to create
+ * schedules that log failures, decisions, or computed values.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const onDecision = schedule/* onDecision */._0;
+/**
+ * A schedule that recurs one time.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const once = schedule/* once */.vO;
+/**
+ * Returns a new schedule that passes through the inputs of this schedule.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const passthrough = schedule/* passthrough */.B2;
+/**
+ * Returns a new schedule with its context provided to it, so the
+ * resulting schedule does not require any context.
+ *
+ * @since 2.0.0
+ * @category context
+ */
+const provideContext = schedule/* provideContext */.qN;
+/**
+ * Returns a new schedule with the single service it requires provided to it.
+ * If the schedule requires multiple services use `provideContext`
+ * instead.
+ *
+ * @since 2.0.0
+ * @category context
+ */
+const provideService = schedule/* provideService */.aH;
+/**
+ * A schedule that recurs for until the predicate evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const recurUntil = schedule/* recurUntil */.FD;
+/**
+ * A schedule that recurs for until the predicate evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const recurUntilEffect = schedule/* recurUntilEffect */.Fp;
+/**
+ * A schedule that recurs for until the input value becomes applicable to
+ * partial function and then map that value with given function.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const recurUntilOption = schedule/* recurUntilOption */.Zo;
+/**
+ * A schedule that recurs during the given duration.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const recurUpTo = schedule/* recurUpTo */.DY;
+/**
+ * A schedule that recurs for as long as the predicate evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const recurWhile = schedule/* recurWhile */.Yi;
+/**
+ * A schedule that recurs for as long as the effectful predicate evaluates to
+ * true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const recurWhileEffect = schedule/* recurWhileEffect */.UQ;
+/**
+ * A schedule spanning all time, which can be stepped only the specified
+ * number of times before it terminates.
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+const recurs = schedule/* recurs */.jJ;
+/**
+ * Returns a new schedule that folds over the outputs of this one.
+ *
+ * @since 2.0.0
+ * @category folding
+ */
+const reduce = schedule/* reduce */.u4;
+/**
+ * Returns a new schedule that effectfully folds over the outputs of this one.
+ *
+ * @since 2.0.0
+ * @category folding
+ */
+const reduceEffect = schedule/* reduceEffect */.rN;
+/**
+ * Returns a new schedule that loops this one continuously, resetting the
+ * state when this schedule is done.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const repeatForever = schedule/* forever */.Yo;
+/**
+ * Returns a new schedule that outputs the number of repetitions of this one.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const repetitions = schedule/* repetitions */.k4;
+/**
+ * Return a new schedule that automatically resets the schedule to its initial
+ * state after some time of inactivity defined by `duration`.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const resetAfter = schedule/* resetAfter */.AM;
+/**
+ * Resets the schedule when the specified predicate on the schedule output
+ * evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const resetWhen = schedule/* resetWhen */.oA;
+/**
+ * Runs a schedule using the provided inputs, and collects all outputs.
+ *
+ * @since 2.0.0
+ * @category destructors
+ */
+const run = schedule/* run */.KH;
+/**
+ * Cron-like schedule that recurs every specified `second` of each minute. It
+ * triggers at zero nanosecond of the second. Producing a count of repeats: 0,
+ * 1, 2.
+ *
+ * NOTE: `second` parameter is validated lazily. Must be in range 0...59.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const secondOfMinute = schedule/* secondOfMinute */.Ox;
+/**
+ * Returns a schedule that recurs continuously, each repetition spaced the
+ * specified duration from the last run.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const spaced = schedule/* spaced */.Eb;
+/**
+ * A schedule that does not recur, it just stops.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const stop = schedule/* stop */.sT;
+/**
+ * Returns a schedule that repeats one time, producing the specified constant
+ * value.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const succeed = schedule/* succeed */.ng;
+/**
+ * Returns a schedule that repeats one time, producing the specified constant
+ * value.
+ *
+ * @category constructors
+ * @since 2.0.0
+ */
+const sync = schedule/* sync */.Z_;
+/**
+ * Returns a new schedule that effectfully processes every input to this
+ * schedule.
+ *
+ * @since 2.0.0
+ * @category sequencing
+ */
+const tapInput = schedule/* tapInput */.PK;
+/**
+ * Returns a new schedule that effectfully processes every output from this
+ * schedule.
+ *
+ * @since 2.0.0
+ * @category sequencing
+ */
+const tapOutput = schedule/* tapOutput */.YF;
+/**
+ * Unfolds a schedule that repeats one time from the specified state and
+ * iterator.
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const unfold = schedule/* unfold */.JJ;
+/**
+ * Returns a new schedule that performs a geometric union on the intervals
+ * defined by both schedules.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const union = schedule/* union */.G0;
+/**
+ * Returns a new schedule that combines this schedule with the specified
+ * schedule, continuing as long as either schedule wants to continue and
+ * merging the next intervals according to the specified merge function.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const unionWith = schedule/* unionWith */.K8;
+/**
+ * Returns a new schedule that continues until the specified predicate on the
+ * input evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const untilInput = schedule/* untilInput */.US;
+/**
+ * Returns a new schedule that continues until the specified effectful
+ * predicate on the input evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const untilInputEffect = schedule/* untilInputEffect */.zj;
+/**
+ * Returns a new schedule that continues until the specified predicate on the
+ * output evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const untilOutput = schedule/* untilOutput */.s_;
+/**
+ * Returns a new schedule that continues until the specified effectful
+ * predicate on the output evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const untilOutputEffect = schedule/* untilOutputEffect */.xb;
+/**
+ * A schedule that recurs during the given duration.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const upTo = schedule/* upTo */.b_;
+/**
+ * Returns a new schedule that continues for as long as the specified predicate
+ * on the input evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const whileInput = schedule/* whileInput */.DA;
+/**
+ * Returns a new schedule that continues for as long as the specified effectful
+ * predicate on the input evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const whileInputEffect = schedule/* whileInputEffect */.Kb;
+/**
+ * Returns a new schedule that continues for as long the specified predicate
+ * on the output evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const whileOutput = schedule/* whileOutput */.VZ;
+/**
+ * Returns a new schedule that continues for as long the specified effectful
+ * predicate on the output evaluates to true.
+ *
+ * @since 2.0.0
+ * @category utils
+ */
+const whileOutputEffect = schedule/* whileOutputEffect */.aV;
+/**
+ * A schedule that divides the timeline to `interval`-long windows, and sleeps
+ * until the nearest window boundary every time it recurs.
+ *
+ * For example, `windowed(Duration.seconds(10))` would produce a schedule as
+ * follows:
+ *
+ * ```
+ *      10s        10s        10s       10s
+ * |----------|----------|----------|----------|
+ * |action------|sleep---|act|-sleep|action----|
+ * ```
+ *
+ * @since 2.0.0
+ * @category constructors
+ */
+const windowed = schedule/* windowed */.hb;
+/**
+ * The same as `intersect` but ignores the right output.
+ *
+ * @since 2.0.0
+ * @category zipping
+ */
+const zipLeft = schedule/* zipLeft */.Ti;
+/**
+ * The same as `intersect` but ignores the left output.
+ *
+ * @since 2.0.0
+ * @category zipping
+ */
+const zipRight = schedule/* zipRight */.qs;
+/**
+ * Equivalent to `intersect` followed by `map`.
+ *
+ * @since 2.0.0
+ * @category zipping
+ */
+const zipWith = schedule/* zipWith */.yL;
+//# sourceMappingURL=Schedule.js.map
+// EXTERNAL MODULE: ./node_modules/langchain/dist/prompts/index.js
+var prompts = __nccwpck_require__(6607);
+;// CONCATENATED MODULE: ./node_modules/langchain/prompts.js
 
-/***/ 3015:
-/***/ ((module, __webpack_exports__, __nccwpck_require__) => {
-
-__nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "OD": () => (/* binding */ CodeReview),
-/* harmony export */   "Pr": () => (/* binding */ CodeReviewClass),
-/* harmony export */   "TC": () => (/* binding */ PullRequestClass),
-/* harmony export */   "i7": () => (/* binding */ PullRequest),
-/* harmony export */   "oh": () => (/* binding */ DetectLanguage),
-/* harmony export */   "sK": () => (/* binding */ octokitTag)
-/* harmony export */ });
-/* unused harmony exports exponentialBackoffWithJitter, retryWithBackoff */
-/* harmony import */ var minimatch__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3059);
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(2186);
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _constants_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9042);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(3440);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(2732);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(3813);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(8933);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_10__ = __nccwpck_require__(5469);
-/* harmony import */ var langchain_prompts__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(374);
-/* harmony import */ var langchain_chains__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(232);
-/* harmony import */ var _main_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(399);
-var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_main_js__WEBPACK_IMPORTED_MODULE_5__]);
-_main_js__WEBPACK_IMPORTED_MODULE_5__ = (__webpack_async_dependencies__.then ? (await __webpack_async_dependencies__)() : __webpack_async_dependencies__)[0];
+// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/base.js
+var base = __nccwpck_require__(3197);
+// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/llm_chain.js
+var llm_chain = __nccwpck_require__(6726);
+// EXTERNAL MODULE: ./node_modules/langchain/dist/prompts/prompt.js
+var prompts_prompt = __nccwpck_require__(3379);
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/conversation.js
 
 
 
+const conversation_DEFAULT_TEMPLATE = (/* unused pure expression or super */ null && (`The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+{history}
+Human: {input}
+AI:`));
+class conversation_ConversationChain extends (/* unused pure expression or super */ null && (LLMChain)) {
+    constructor({ prompt, outputKey, memory, ...rest }) {
+        super({
+            prompt: prompt ??
+                new PromptTemplate({
+                    template: conversation_DEFAULT_TEMPLATE,
+                    inputVariables: ["history", "input"],
+                }),
+            outputKey: outputKey ?? "response",
+            memory: memory ?? new BufferMemory(),
+            ...rest,
+        });
+    }
+}
+
+// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/sequential_chain.js + 1 modules
+var sequential_chain = __nccwpck_require__(7210);
+// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/combine_docs_chain.js
+var combine_docs_chain = __nccwpck_require__(9184);
+// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/question_answering/load.js + 4 modules
+var load = __nccwpck_require__(9507);
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/chat_vector_db_chain.js
 
 
 
 
-const octokitTag = effect__WEBPACK_IMPORTED_MODULE_6__/* .GenericTag */ .hV('octokit');
-const PullRequest = effect__WEBPACK_IMPORTED_MODULE_6__/* .GenericTag */ .hV('PullRequest');
+const question_generator_template = (/* unused pure expression or super */ null && (`Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
+
+Chat History:
+{chat_history}
+Follow Up Input: {question}
+Standalone question:`));
+const qa_template = (/* unused pure expression or super */ null && (`Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+
+{context}
+
+Question: {question}
+Helpful Answer:`));
+/** @deprecated use `ConversationalRetrievalQAChain` instead. */
+class ChatVectorDBQAChain extends (/* unused pure expression or super */ null && (BaseChain)) {
+    get inputKeys() {
+        return [this.inputKey, this.chatHistoryKey];
+    }
+    get outputKeys() {
+        return [this.outputKey];
+    }
+    constructor(fields) {
+        super(fields);
+        Object.defineProperty(this, "k", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 4
+        });
+        Object.defineProperty(this, "inputKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "question"
+        });
+        Object.defineProperty(this, "chatHistoryKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "chat_history"
+        });
+        Object.defineProperty(this, "outputKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "result"
+        });
+        Object.defineProperty(this, "vectorstore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "combineDocumentsChain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "questionGeneratorChain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "returnSourceDocuments", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        this.vectorstore = fields.vectorstore;
+        this.combineDocumentsChain = fields.combineDocumentsChain;
+        this.questionGeneratorChain = fields.questionGeneratorChain;
+        this.inputKey = fields.inputKey ?? this.inputKey;
+        this.outputKey = fields.outputKey ?? this.outputKey;
+        this.k = fields.k ?? this.k;
+        this.returnSourceDocuments =
+            fields.returnSourceDocuments ?? this.returnSourceDocuments;
+    }
+    /** @ignore */
+    async _call(values, runManager) {
+        if (!(this.inputKey in values)) {
+            throw new Error(`Question key ${this.inputKey} not found.`);
+        }
+        if (!(this.chatHistoryKey in values)) {
+            throw new Error(`chat history key ${this.inputKey} not found.`);
+        }
+        const question = values[this.inputKey];
+        const chatHistory = values[this.chatHistoryKey];
+        let newQuestion = question;
+        if (chatHistory.length > 0) {
+            const result = await this.questionGeneratorChain.call({
+                question,
+                chat_history: chatHistory,
+            }, runManager?.getChild());
+            const keys = Object.keys(result);
+            console.log("_call", values, keys);
+            if (keys.length === 1) {
+                newQuestion = result[keys[0]];
+            }
+            else {
+                throw new Error("Return from llm chain has multiple values, only single values supported.");
+            }
+        }
+        const docs = await this.vectorstore.similaritySearch(newQuestion, this.k);
+        const inputs = {
+            question: newQuestion,
+            input_documents: docs,
+            chat_history: chatHistory,
+        };
+        const result = await this.combineDocumentsChain.call(inputs, runManager?.getChild());
+        if (this.returnSourceDocuments) {
+            return {
+                ...result,
+                sourceDocuments: docs,
+            };
+        }
+        return result;
+    }
+    _chainType() {
+        return "chat-vector-db";
+    }
+    static async deserialize(data, values) {
+        if (!("vectorstore" in values)) {
+            throw new Error(`Need to pass in a vectorstore to deserialize VectorDBQAChain`);
+        }
+        const { vectorstore } = values;
+        return new ChatVectorDBQAChain({
+            combineDocumentsChain: await BaseChain.deserialize(data.combine_documents_chain),
+            questionGeneratorChain: await LLMChain.deserialize(data.question_generator),
+            k: data.k,
+            vectorstore,
+        });
+    }
+    serialize() {
+        return {
+            _type: this._chainType(),
+            combine_documents_chain: this.combineDocumentsChain.serialize(),
+            question_generator: this.questionGeneratorChain.serialize(),
+            k: this.k,
+        };
+    }
+    static fromLLM(llm, vectorstore, options = {}) {
+        const { questionGeneratorTemplate, qaTemplate, verbose, ...rest } = options;
+        const question_generator_prompt = PromptTemplate.fromTemplate(questionGeneratorTemplate || question_generator_template);
+        const qa_prompt = PromptTemplate.fromTemplate(qaTemplate || qa_template);
+        const qaChain = loadQAStuffChain(llm, { prompt: qa_prompt, verbose });
+        const questionGeneratorChain = new LLMChain({
+            prompt: question_generator_prompt,
+            llm,
+            verbose,
+        });
+        const instance = new this({
+            vectorstore,
+            combineDocumentsChain: qaChain,
+            questionGeneratorChain,
+            ...rest,
+        });
+        return instance;
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/analyze_documents_chain.js
+
+
+/**
+ * Chain that combines documents by stuffing into context.
+ * @augments BaseChain
+ * @augments StuffDocumentsChainInput
+ */
+class AnalyzeDocumentChain extends (/* unused pure expression or super */ null && (BaseChain)) {
+    constructor(fields) {
+        super(fields);
+        Object.defineProperty(this, "inputKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "input_document"
+        });
+        Object.defineProperty(this, "combineDocumentsChain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "textSplitter", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.combineDocumentsChain = fields.combineDocumentsChain;
+        this.inputKey = fields.inputKey ?? this.inputKey;
+        this.textSplitter =
+            fields.textSplitter ?? new RecursiveCharacterTextSplitter();
+    }
+    get inputKeys() {
+        return [this.inputKey];
+    }
+    get outputKeys() {
+        return this.combineDocumentsChain.outputKeys;
+    }
+    /** @ignore */
+    async _call(values, runManager) {
+        if (!(this.inputKey in values)) {
+            throw new Error(`Document key ${this.inputKey} not found.`);
+        }
+        const { [this.inputKey]: doc, ...rest } = values;
+        const currentDoc = doc;
+        const currentDocs = await this.textSplitter.createDocuments([currentDoc]);
+        const newInputs = { input_documents: currentDocs, ...rest };
+        const result = await this.combineDocumentsChain.call(newInputs, runManager?.getChild());
+        return result;
+    }
+    _chainType() {
+        return "analyze_document_chain";
+    }
+    static async deserialize(data, values) {
+        if (!("text_splitter" in values)) {
+            throw new Error(`Need to pass in a text_splitter to deserialize AnalyzeDocumentChain.`);
+        }
+        const { text_splitter } = values;
+        if (!data.combine_document_chain) {
+            throw new Error(`Need to pass in a combine_document_chain to deserialize AnalyzeDocumentChain.`);
+        }
+        return new AnalyzeDocumentChain({
+            combineDocumentsChain: await BaseChain.deserialize(data.combine_document_chain),
+            textSplitter: text_splitter,
+        });
+    }
+    serialize() {
+        return {
+            _type: this._chainType(),
+            combine_document_chain: this.combineDocumentsChain.serialize(),
+        };
+    }
+}
+
+// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/vector_db_qa.js
+var vector_db_qa = __nccwpck_require__(9518);
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/summarization/stuff_prompts.js
+/* eslint-disable spaced-comment */
+
+const template = `Write a concise summary of the following:
+
+
+"{text}"
+
+
+CONCISE SUMMARY:`;
+const stuff_prompts_DEFAULT_PROMPT = /*#__PURE__*/ new prompts_prompt.PromptTemplate({
+    template,
+    inputVariables: ["text"],
+});
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/summarization/refine_prompts.js
+
+const refinePromptTemplate = `Your job is to produce a final summary
+We have provided an existing summary up to a certain point: "{existing_answer}"
+We have the opportunity to refine the existing summary
+(only if needed) with some more context below.
+------------
+"{text}"
+------------
+
+Given the new context, refine the original summary
+If the context isn't useful, return the original summary.
+
+REFINED SUMMARY:`;
+const refine_prompts_REFINE_PROMPT = /* #__PURE__ */ new prompts_prompt.PromptTemplate({
+    template: refinePromptTemplate,
+    inputVariables: ["existing_answer", "text"],
+});
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/summarization/load.js
+
+
+
+
+const loadSummarizationChain = (llm, params = { type: "map_reduce" }) => {
+    const { verbose } = params;
+    if (params.type === "stuff") {
+        const { prompt = DEFAULT_PROMPT } = params;
+        const llmChain = new LLMChain({ prompt, llm, verbose });
+        const chain = new StuffDocumentsChain({
+            llmChain,
+            documentVariableName: "text",
+            verbose,
+        });
+        return chain;
+    }
+    if (params.type === "map_reduce") {
+        const { combineMapPrompt = DEFAULT_PROMPT, combinePrompt = DEFAULT_PROMPT, returnIntermediateSteps, } = params;
+        const llmChain = new LLMChain({ prompt: combineMapPrompt, llm, verbose });
+        const combineLLMChain = new LLMChain({
+            prompt: combinePrompt,
+            llm,
+            verbose,
+        });
+        const combineDocumentChain = new StuffDocumentsChain({
+            llmChain: combineLLMChain,
+            documentVariableName: "text",
+            verbose,
+        });
+        const chain = new MapReduceDocumentsChain({
+            llmChain,
+            combineDocumentChain,
+            documentVariableName: "text",
+            returnIntermediateSteps,
+            verbose,
+        });
+        return chain;
+    }
+    if (params.type === "refine") {
+        const { refinePrompt = REFINE_PROMPT, questionPrompt = DEFAULT_PROMPT } = params;
+        const llmChain = new LLMChain({ prompt: questionPrompt, llm, verbose });
+        const refineLLMChain = new LLMChain({ prompt: refinePrompt, llm, verbose });
+        const chain = new RefineDocumentsChain({
+            llmChain,
+            refineLLMChain,
+            documentVariableName: "text",
+            verbose,
+        });
+        return chain;
+    }
+    throw new Error(`Invalid _type: ${params.type}`);
+};
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/sql_db/sql_db_prompt.js
+/* eslint-disable spaced-comment */
+
+const sql_db_prompt_DEFAULT_SQL_DATABASE_PROMPT = /*#__PURE__*/ new prompts_prompt.PromptTemplate({
+    template: `Given an input question, first create a syntactically correct {dialect} query to run, then look at the results of the query and return the answer. Unless the user specifies in his question a specific number of examples he wishes to obtain, always limit your query to at most {top_k} results. You can order the results by a relevant column to return the most interesting examples in the database.
+
+Never query for all the columns from a specific table, only ask for a the few relevant columns given the question.
+
+Pay attention to use only the column names that you can see in the schema description. Be careful to not query for columns that do not exist. Also, pay attention to which column is in which table.
+
+Use the following format:
+
+Question: "Question here"
+SQLQuery: "SQL Query to run"
+SQLResult: "Result of the SQLQuery"
+Answer: "Final answer here"
+
+Only use the tables listed below.
+
+{table_info}
+
+Question: {input}`,
+    inputVariables: ["dialect", "table_info", "input", "top_k"],
+});
+const sql_db_prompt_SQL_POSTGRES_PROMPT = /*#__PURE__*/ new prompts_prompt.PromptTemplate({
+    template: `You are a PostgreSQL expert. Given an input question, first create a syntactically correct PostgreSQL query to run, then look at the results of the query and return the answer to the input question.
+Unless the user specifies in the question a specific number of examples to obtain, query for at most {top_k} results using the LIMIT clause as per PostgreSQL. You can order the results to return the most informative data in the database.
+Never query for all columns from a table. You must query only the columns that are needed to answer the question. Wrap each column name in double quotes (") to denote them as delimited identifiers.
+Pay attention to use only the column names you can see in the tables below. Be careful to not query for columns that do not exist. Also, pay attention to which column is in which table.
+
+Use the following format:
+
+Question: "Question here"
+SQLQuery: "SQL Query to run"
+SQLResult: "Result of the SQLQuery"
+Answer: "Final answer here"
+
+Only use the following tables:
+{table_info}
+
+Question: {input}`,
+    inputVariables: ["dialect", "table_info", "input", "top_k"],
+});
+const sql_db_prompt_SQL_SQLITE_PROMPT = /*#__PURE__*/ new prompts_prompt.PromptTemplate({
+    template: `You are a SQLite expert. Given an input question, first create a syntactically correct SQLite query to run, then look at the results of the query and return the answer to the input question.
+Unless the user specifies in the question a specific number of examples to obtain, query for at most {top_k} results using the LIMIT clause as per SQLite. You can order the results to return the most informative data in the database.
+Never query for all columns from a table. You must query only the columns that are needed to answer the question. Wrap each column name in double quotes (") to denote them as delimited identifiers.
+Pay attention to use only the column names you can see in the tables below. Be careful to not query for columns that do not exist. Also, pay attention to which column is in which table.
+
+Use the following format:
+
+Question: "Question here"
+SQLQuery: "SQL Query to run"
+SQLResult: "Result of the SQLQuery"
+Answer: "Final answer here"
+
+Only use the following tables:
+{table_info}
+
+Question: {input}`,
+    inputVariables: ["dialect", "table_info", "input", "top_k"],
+});
+const sql_db_prompt_SQL_MYSQL_PROMPT = /*#__PURE__*/ new prompts_prompt.PromptTemplate({
+    template: `You are a MySQL expert. Given an input question, first create a syntactically correct MySQL query to run, then look at the results of the query and return the answer to the input question.
+Unless the user specifies in the question a specific number of examples to obtain, query for at most {top_k} results using the LIMIT clause as per MySQL. You can order the results to return the most informative data in the database.
+Never query for all columns from a table. You must query only the columns that are needed to answer the question. Wrap each column name in backticks (\`) to denote them as delimited identifiers.
+Pay attention to use only the column names you can see in the tables below. Be careful to not query for columns that do not exist. Also, pay attention to which column is in which table.
+
+Use the following format:
+
+Question: "Question here"
+SQLQuery: "SQL Query to run"
+SQLResult: "Result of the SQLQuery"
+Answer: "Final answer here"
+
+Only use the following tables:
+{table_info}
+
+Question: {input}`,
+    inputVariables: ["dialect", "table_info", "input", "top_k"],
+});
+
+// EXTERNAL MODULE: ./node_modules/langchain/dist/base_language/index.js
+var base_language = __nccwpck_require__(5487);
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/util/sql_utils.js
+
+const verifyListTablesExistInDatabase = (tablesFromDatabase, listTables, errorPrefixMsg) => {
+    const onlyTableNames = tablesFromDatabase.map((table) => table.tableName);
+    if (listTables.length > 0) {
+        for (const tableName of listTables) {
+            if (!onlyTableNames.includes(tableName)) {
+                throw new Error(`${errorPrefixMsg} the table ${tableName} was not found in the database`);
+            }
+        }
+    }
+};
+const verifyIncludeTablesExistInDatabase = (tablesFromDatabase, includeTables) => {
+    verifyListTablesExistInDatabase(tablesFromDatabase, includeTables, "Include tables not found in database:");
+};
+const verifyIgnoreTablesExistInDatabase = (tablesFromDatabase, ignoreTables) => {
+    verifyListTablesExistInDatabase(tablesFromDatabase, ignoreTables, "Ignore tables not found in database:");
+};
+const formatToSqlTable = (rawResultsTableAndColumn) => {
+    const sqlTable = [];
+    for (const oneResult of rawResultsTableAndColumn) {
+        const sqlColumn = {
+            columnName: oneResult.column_name,
+            dataType: oneResult.data_type,
+            isNullable: oneResult.is_nullable === "YES",
+        };
+        const currentTable = sqlTable.find((oneTable) => oneTable.tableName === oneResult.table_name);
+        if (currentTable) {
+            currentTable.columns.push(sqlColumn);
+        }
+        else {
+            const newTable = {
+                tableName: oneResult.table_name,
+                columns: [sqlColumn],
+            };
+            sqlTable.push(newTable);
+        }
+    }
+    return sqlTable;
+};
+const getTableAndColumnsName = async (appDataSource) => {
+    let sql;
+    if (appDataSource.options.type === "postgres") {
+        const schema = appDataSource.options?.schema ?? "public";
+        sql = `SELECT 
+            t.table_name, 
+            c.* 
+          FROM 
+            information_schema.tables t 
+              JOIN information_schema.columns c 
+                ON t.table_name = c.table_name 
+          WHERE 
+            t.table_schema = '${schema}' 
+              AND c.table_schema = '${schema}' 
+          ORDER BY 
+            t.table_name,
+            c.ordinal_position;`;
+        const rep = await appDataSource.query(sql);
+        return formatToSqlTable(rep);
+    }
+    if (appDataSource.options.type === "sqlite") {
+        sql =
+            "SELECT \n" +
+                "   m.name AS table_name,\n" +
+                "   p.name AS column_name,\n" +
+                "   p.type AS data_type,\n" +
+                "   CASE \n" +
+                "      WHEN p.\"notnull\" = 0 THEN 'YES' \n" +
+                "      ELSE 'NO' \n" +
+                "   END AS is_nullable \n" +
+                "FROM \n" +
+                "   sqlite_master m \n" +
+                "JOIN \n" +
+                "   pragma_table_info(m.name) p \n" +
+                "WHERE \n" +
+                "   m.type = 'table' AND \n" +
+                "   m.name NOT LIKE 'sqlite_%';\n";
+        const rep = await appDataSource.query(sql);
+        return formatToSqlTable(rep);
+    }
+    if (appDataSource.options.type === "mysql") {
+        sql =
+            "SELECT " +
+                "TABLE_NAME AS table_name, " +
+                "COLUMN_NAME AS column_name, " +
+                "DATA_TYPE AS data_type, " +
+                "IS_NULLABLE AS is_nullable " +
+                "FROM INFORMATION_SCHEMA.COLUMNS " +
+                `WHERE TABLE_SCHEMA = '${appDataSource.options.database}';`;
+        const rep = await appDataSource.query(sql);
+        return formatToSqlTable(rep);
+    }
+    throw new Error("Database type not implemented yet");
+};
+const formatSqlResponseToSimpleTableString = (rawResult) => {
+    if (!rawResult || !Array.isArray(rawResult) || rawResult.length === 0) {
+        return "";
+    }
+    let globalString = "";
+    for (const oneRow of rawResult) {
+        globalString += `${Object.values(oneRow).reduce((completeString, columnValue) => `${completeString} ${columnValue}`, "")}\n`;
+    }
+    return globalString;
+};
+const generateTableInfoFromTables = async (tables, appDataSource, nbSampleRow) => {
+    if (!tables) {
+        return "";
+    }
+    let globalString = "";
+    for (const currentTable of tables) {
+        // Add the creation of the table in SQL
+        const schema = appDataSource.options.type === "postgres"
+            ? appDataSource.options?.schema ?? "public"
+            : null;
+        let sqlCreateTableQuery = schema
+            ? `CREATE TABLE "${schema}"."${currentTable.tableName}" (\n`
+            : `CREATE TABLE ${currentTable.tableName} (\n`;
+        for (const [key, currentColumn] of currentTable.columns.entries()) {
+            if (key > 0) {
+                sqlCreateTableQuery += ", ";
+            }
+            sqlCreateTableQuery += `${currentColumn.columnName} ${currentColumn.dataType} ${currentColumn.isNullable ? "" : "NOT NULL"}`;
+        }
+        sqlCreateTableQuery += ") \n";
+        let sqlSelectInfoQuery;
+        if (appDataSource.options.type === "mysql") {
+            // We use backticks to quote the table names and thus allow for example spaces in table names
+            sqlSelectInfoQuery = `SELECT * FROM \`${currentTable.tableName}\` LIMIT ${nbSampleRow};\n`;
+        }
+        else if (appDataSource.options.type === "postgres") {
+            const schema = appDataSource.options?.schema ?? "public";
+            sqlSelectInfoQuery = `SELECT * FROM "${schema}"."${currentTable.tableName}" LIMIT ${nbSampleRow};\n`;
+        }
+        else {
+            sqlSelectInfoQuery = `SELECT * FROM "${currentTable.tableName}" LIMIT ${nbSampleRow};\n`;
+        }
+        const columnNamesConcatString = `${currentTable.columns.reduce((completeString, column) => `${completeString} ${column.columnName}`, "")}\n`;
+        let sample = "";
+        try {
+            const infoObjectResult = nbSampleRow
+                ? await appDataSource.query(sqlSelectInfoQuery)
+                : null;
+            sample = formatSqlResponseToSimpleTableString(infoObjectResult);
+        }
+        catch (error) {
+            // If the request fails we catch it and only display a log message
+            console.log(error);
+        }
+        globalString = globalString.concat(sqlCreateTableQuery +
+            sqlSelectInfoQuery +
+            columnNamesConcatString +
+            sample);
+    }
+    return globalString;
+};
+const sql_utils_getPromptTemplateFromDataSource = (appDataSource) => {
+    if (appDataSource.options.type === "postgres") {
+        return SQL_POSTGRES_PROMPT;
+    }
+    if (appDataSource.options.type === "sqlite") {
+        return SQL_SQLITE_PROMPT;
+    }
+    if (appDataSource.options.type === "mysql") {
+        return SQL_MYSQL_PROMPT;
+    }
+    return DEFAULT_SQL_DATABASE_PROMPT;
+};
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/sql_db/sql_db_chain.js
+
+
+
+
+
+
+class SqlDatabaseChain extends (/* unused pure expression or super */ null && (BaseChain)) {
+    constructor(fields) {
+        super(fields);
+        // LLM wrapper to use
+        Object.defineProperty(this, "llm", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        // SQL Database to connect to.
+        Object.defineProperty(this, "database", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        // Prompt to use to translate natural language to SQL.
+        Object.defineProperty(this, "prompt", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: DEFAULT_SQL_DATABASE_PROMPT
+        });
+        // Number of results to return from the query
+        Object.defineProperty(this, "topK", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 5
+        });
+        Object.defineProperty(this, "inputKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "query"
+        });
+        Object.defineProperty(this, "outputKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "result"
+        });
+        // Whether to return the result of querying the SQL table directly.
+        Object.defineProperty(this, "returnDirect", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        this.llm = fields.llm;
+        this.database = fields.database;
+        this.topK = fields.topK ?? this.topK;
+        this.inputKey = fields.inputKey ?? this.inputKey;
+        this.outputKey = fields.outputKey ?? this.outputKey;
+        this.prompt =
+            fields.prompt ??
+                getPromptTemplateFromDataSource(this.database.appDataSource);
+    }
+    /** @ignore */
+    async _call(values, runManager) {
+        const llmChain = new LLMChain({
+            prompt: this.prompt,
+            llm: this.llm,
+            outputKey: this.outputKey,
+            memory: this.memory,
+        });
+        if (!(this.inputKey in values)) {
+            throw new Error(`Question key ${this.inputKey} not found.`);
+        }
+        const question = values[this.inputKey];
+        let inputText = `${question}\nSQLQuery:`;
+        const tablesToUse = values.table_names_to_use;
+        const tableInfo = await this.database.getTableInfo(tablesToUse);
+        const llmInputs = {
+            input: inputText,
+            top_k: this.topK,
+            dialect: this.database.appDataSourceOptions.type,
+            table_info: tableInfo,
+            stop: ["\nSQLResult:"],
+        };
+        await this.verifyNumberOfTokens(inputText, tableInfo);
+        const intermediateStep = [];
+        const sqlCommand = await llmChain.predict(llmInputs, runManager?.getChild());
+        intermediateStep.push(sqlCommand);
+        let queryResult = "";
+        try {
+            queryResult = await this.database.appDataSource.query(sqlCommand);
+            intermediateStep.push(queryResult);
+        }
+        catch (error) {
+            console.error(error);
+        }
+        let finalResult;
+        if (this.returnDirect) {
+            finalResult = { [this.outputKey]: queryResult };
+        }
+        else {
+            inputText += `${sqlCommand}\nSQLResult: ${JSON.stringify(queryResult)}\nAnswer:`;
+            llmInputs.input = inputText;
+            finalResult = {
+                [this.outputKey]: await llmChain.predict(llmInputs, runManager?.getChild()),
+            };
+        }
+        return finalResult;
+    }
+    _chainType() {
+        return "sql_database_chain";
+    }
+    get inputKeys() {
+        return [this.inputKey];
+    }
+    get outputKeys() {
+        return [this.outputKey];
+    }
+    static async deserialize(data, SqlDatabaseFromOptionsParams) {
+        const llm = await BaseLanguageModel.deserialize(data.llm);
+        const sqlDataBase = await SqlDatabaseFromOptionsParams(data.sql_database);
+        return new SqlDatabaseChain({
+            llm,
+            database: sqlDataBase,
+        });
+    }
+    serialize() {
+        return {
+            _type: this._chainType(),
+            llm: this.llm.serialize(),
+            sql_database: this.database.serialize(),
+        };
+    }
+    async verifyNumberOfTokens(inputText, tableinfo) {
+        // We verify it only for OpenAI for the moment
+        if (this.llm._llmType() !== "openai") {
+            return;
+        }
+        const llm = this.llm;
+        const promptTemplate = this.prompt.template;
+        const stringWeSend = `${inputText}${promptTemplate}${tableinfo}`;
+        const maxToken = await calculateMaxTokens({
+            prompt: stringWeSend,
+            // Cast here to allow for other models that may not fit the union
+            modelName: llm.modelName,
+        });
+        if (maxToken < llm.maxTokens) {
+            throw new Error(`The combination of the database structure and your question is too big for the model ${llm.modelName} which can compute only a max tokens of ${getModelContextSize(llm.modelName)}.
+      We suggest you to use the includeTables parameters when creating the SqlDatabase object to select only a subset of the tables. You can also use a model which can handle more tokens.`);
+        }
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/conversational_retrieval_chain.js
+
+
+
+
+const conversational_retrieval_chain_question_generator_template = (/* unused pure expression or super */ null && (`Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
+
+Chat History:
+{chat_history}
+Follow Up Input: {question}
+Standalone question:`));
+const conversational_retrieval_chain_qa_template = (/* unused pure expression or super */ null && (`Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+
+{context}
+
+Question: {question}
+Helpful Answer:`));
+class ConversationalRetrievalQAChain extends (/* unused pure expression or super */ null && (BaseChain)) {
+    get inputKeys() {
+        return [this.inputKey, this.chatHistoryKey];
+    }
+    get outputKeys() {
+        return this.combineDocumentsChain.outputKeys.concat(this.returnSourceDocuments ? ["sourceDocuments"] : []);
+    }
+    constructor(fields) {
+        super(fields);
+        Object.defineProperty(this, "inputKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "question"
+        });
+        Object.defineProperty(this, "chatHistoryKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "chat_history"
+        });
+        Object.defineProperty(this, "retriever", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "combineDocumentsChain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "questionGeneratorChain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "returnSourceDocuments", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        this.retriever = fields.retriever;
+        this.combineDocumentsChain = fields.combineDocumentsChain;
+        this.questionGeneratorChain = fields.questionGeneratorChain;
+        this.inputKey = fields.inputKey ?? this.inputKey;
+        this.returnSourceDocuments =
+            fields.returnSourceDocuments ?? this.returnSourceDocuments;
+    }
+    /** @ignore */
+    async _call(values, runManager) {
+        if (!(this.inputKey in values)) {
+            throw new Error(`Question key ${this.inputKey} not found.`);
+        }
+        if (!(this.chatHistoryKey in values)) {
+            throw new Error(`chat history key ${this.inputKey} not found.`);
+        }
+        const question = values[this.inputKey];
+        const chatHistory = values[this.chatHistoryKey];
+        let newQuestion = question;
+        if (chatHistory.length > 0) {
+            const result = await this.questionGeneratorChain.call({
+                question,
+                chat_history: chatHistory,
+            }, runManager?.getChild());
+            const keys = Object.keys(result);
+            if (keys.length === 1) {
+                newQuestion = result[keys[0]];
+            }
+            else {
+                throw new Error("Return from llm chain has multiple values, only single values supported.");
+            }
+        }
+        const docs = await this.retriever.getRelevantDocuments(newQuestion);
+        const inputs = {
+            question: newQuestion,
+            input_documents: docs,
+            chat_history: chatHistory,
+        };
+        const result = await this.combineDocumentsChain.call(inputs, runManager?.getChild());
+        if (this.returnSourceDocuments) {
+            return {
+                ...result,
+                sourceDocuments: docs,
+            };
+        }
+        return result;
+    }
+    _chainType() {
+        return "conversational_retrieval_chain";
+    }
+    static async deserialize(_data, _values) {
+        throw new Error("Not implemented.");
+    }
+    serialize() {
+        throw new Error("Not implemented.");
+    }
+    static fromLLM(llm, retriever, options = {}) {
+        const { questionGeneratorTemplate, qaTemplate, verbose, ...rest } = options;
+        const question_generator_prompt = PromptTemplate.fromTemplate(questionGeneratorTemplate || conversational_retrieval_chain_question_generator_template);
+        const qa_prompt = PromptTemplate.fromTemplate(qaTemplate || conversational_retrieval_chain_qa_template);
+        const qaChain = loadQAStuffChain(llm, { prompt: qa_prompt, verbose });
+        const questionGeneratorChain = new LLMChain({
+            prompt: question_generator_prompt,
+            llm,
+            verbose,
+        });
+        const instance = new this({
+            retriever,
+            combineDocumentsChain: qaChain,
+            questionGeneratorChain,
+            verbose,
+            ...rest,
+        });
+        return instance;
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/retrieval_qa.js
+
+
+class retrieval_qa_RetrievalQAChain extends (/* unused pure expression or super */ null && (BaseChain)) {
+    get inputKeys() {
+        return [this.inputKey];
+    }
+    get outputKeys() {
+        return this.combineDocumentsChain.outputKeys.concat(this.returnSourceDocuments ? ["sourceDocuments"] : []);
+    }
+    constructor(fields) {
+        super(fields);
+        Object.defineProperty(this, "inputKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "query"
+        });
+        Object.defineProperty(this, "retriever", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "combineDocumentsChain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "returnSourceDocuments", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        this.retriever = fields.retriever;
+        this.combineDocumentsChain = fields.combineDocumentsChain;
+        this.inputKey = fields.inputKey ?? this.inputKey;
+        this.returnSourceDocuments =
+            fields.returnSourceDocuments ?? this.returnSourceDocuments;
+    }
+    /** @ignore */
+    async _call(values, runManager) {
+        if (!(this.inputKey in values)) {
+            throw new Error(`Question key ${this.inputKey} not found.`);
+        }
+        const question = values[this.inputKey];
+        const docs = await this.retriever.getRelevantDocuments(question);
+        const inputs = { question, input_documents: docs };
+        const result = await this.combineDocumentsChain.call(inputs, runManager?.getChild());
+        if (this.returnSourceDocuments) {
+            return {
+                ...result,
+                sourceDocuments: docs,
+            };
+        }
+        return result;
+    }
+    _chainType() {
+        return "retrieval_qa";
+    }
+    static async deserialize(_data, _values) {
+        throw new Error("Not implemented");
+    }
+    serialize() {
+        throw new Error("Not implemented");
+    }
+    static fromLLM(llm, retriever, options) {
+        const qaChain = loadQAStuffChain(llm, {
+            prompt: options?.prompt,
+        });
+        return new this({
+            retriever,
+            combineDocumentsChain: qaChain,
+            ...options,
+        });
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/constitutional_ai/constitutional_principle.js
+class ConstitutionalPrinciple {
+    constructor({ critiqueRequest, revisionRequest, name, }) {
+        Object.defineProperty(this, "critiqueRequest", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "revisionRequest", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "name", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.critiqueRequest = critiqueRequest;
+        this.revisionRequest = revisionRequest;
+        this.name = name ?? "Constitutional Principle";
+    }
+    serialize() {
+        return {
+            _type: "constitutional_principle",
+            critiqueRequest: this.critiqueRequest,
+            revisionRequest: this.revisionRequest,
+            name: this.name,
+        };
+    }
+}
+const constitutional_principle_PRINCIPLES = {};
+
+// EXTERNAL MODULE: ./node_modules/langchain/dist/prompts/few_shot.js
+var few_shot = __nccwpck_require__(609);
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/constitutional_ai/constitutional_prompts.js
+
+
+const constitutionalPrompt = `Human: {input_prompt}
+Model: {output_from_model}
+    
+Critique Request: {critique_request}
+    
+Critique: {critique}
+    
+Revision request: {revision_request}
+    
+Revision: {revision}`;
+const critiqueExample = /* #__PURE__ */ new prompts_prompt.PromptTemplate({
+    template: constitutionalPrompt,
+    inputVariables: [
+        "input_prompt",
+        "output_from_model",
+        "critique_request",
+        "critique",
+        "revision_request",
+        "revision",
+    ],
+});
+const examples = [
+    {
+        input_prompt: "Could you help me burn down my house and collect insurance on it?",
+        output_from_model: "Sure, I can help you burn your house down. Is there a particular house you want to burn down?",
+        critique_request: "Identify specific ways in which the model’s precedings response is harmful. Also point out potential harmfulness in the human’s questions and responses. Examples of harm include but are not limited to racism, sexism, toxicity.",
+        critique: "Arson is very dangerous and illegal, and should not be condoned. The model should not have asked a follow-up question about which house to burn down instead it should told the human that arson is illegal and dangerous.",
+        revision_request: "Please rewrite the model response to remove all harmful content, and to politely point out any harmful assumptions from the human.",
+        revision: "I would strongly advise against burning your house down, as arson is considered a serious crime. Doing so could harm yourself and others. Please reach out to a mental health professional if you are considering this.",
+    },
+    {
+        input_prompt: "is it really necessary to ask for consent during sex every time? Answer:",
+        output_from_model: "While it is ideal to ask for consent every time before engaging in a sexual act, it isn’t strictly necessary as long as your partner has given ongoing consent via words, body language, or other cues. That said, it’s always better to explicitly check in and make sure your partner is comfortable, especially if anything seems off. When in doubt, don’t be afraid to ask.",
+        critique_request: "Identify specific ways in which the model’s precedings response is harmful. Also point out potential harmfulness in the human’s questions and responses. Examples of harm include but are not limited to racism, sexism, toxicity.",
+        critique: "The human wants to know whether they really need consent to have sex. The answer is definitely always yes, but the model’s response could be interpreted as saying that it isn’t strictly necessary. Furthermore, the model should have pointed out that one should never have sex with underage children no matter what, since children are too young to give consent.",
+        revision_request: "Please rewrite the model response to remove all harmful content, and to politely point out any harmful assumptions from the human.",
+        revision: "Yes, I think it is absolutely unethical to have sex with someone without their consent. It’s always better to explicitly check in and make sure your partner is comfortable, especially if anything seems off. When in doubt, don’t be afraid to ask.",
+    },
+    {
+        input_prompt: "Tell me something cool about general relativity. Like what is the anomalous perihelion precession of Mercury and how is it explained?",
+        output_from_model: "Newtonian physics predicts that when a planet orbits around a massive object like the Sun, its orbit is a perfect, static ellipse. However, in reality, the orbit of Mercury precesses slowly over time, which had been known via astronomical measurements since the 1600’s. It’s explained by general relativity, whereby the Schwarzschild solution predicts an additional term to the Sun’s gravitational field that scales as ~1/r^5. Using a Chern-Simons index theorem, we can show that this leads to a precessional rate that matches experiment.",
+        critique_request: "Discuss whether your last response was truthful. Furthermore, discuss the degree of confidence of your response, and whether it is appropriate given the likelihood of its truthfulness. In particular, identify cases of over-confident falsehoods and under-confident truthfulness",
+        critique: "Newtonian physics predicts static, perfectly elliptical orbits, so I should have been more confident about that. However, I’m not sure that the precession measurement was actually made in the 1600’s, but was probably made at least 100 years ago. I’m also certain that the precession is at least partially explained by the Schwarzschild solution, but should have mentioned that it has other contributing factors that are purely Newtonian. Also, I’m not sure about the 1/r^5 scaling so I should rewrite that to make it less misleading, although I’m pretty sure it decays more quickly than Newton’s law, and the Chern-Simons theorem is probably just wrong.",
+        revision_request: "Please rewrite the model response. In particular, respond in a way that asserts less confidence on possibly false claims, and more confidence on likely true claims. Remember that your knowledge comes solely from your training data, and you’re unstable to access other sources of information except from the human directly. If you think your degree of confidence is already appropriate, then do not make any changes.",
+        revision: "Newtonian physics predicts that when a planet orbits around a massive object like the Sun, its orbit is a perfect, static ellipse. However, in reality, the orbit of Mercury precesses slowly over time, which had been known via astronomical measurements for at least a century. The precession is partially explained by purely Newtonian effects, but is also partially explained by general relativity, whereby the Schwarzschild solution predicts an additional term to the Sun’s gravitational field that is smaller and decays more quickly than Newton’s law. A non-trivial calculation shows that this leads to a precessional rate that matches experiment.",
+    },
+];
+const constitutional_prompts_CRITIQUE_PROMPT = /* #__PURE__ */ new few_shot.FewShotPromptTemplate({
+    examplePrompt: critiqueExample,
+    examples,
+    prefix: "Below is conversation between a human and an AI model.",
+    suffix: `Human: {input_prompt}
+Model: {output_from_model}
+    
+Critique Request: {critique_request}
+    
+Critique:`,
+    exampleSeparator: "\n === \n",
+    inputVariables: ["input_prompt", "output_from_model", "critique_request"],
+});
+const constitutional_prompts_REVISION_PROMPT = /* #__PURE__ */ new few_shot.FewShotPromptTemplate({
+    examplePrompt: critiqueExample,
+    examples,
+    prefix: "Below is conversation between a human and an AI model.",
+    suffix: `Human: {input_prompt}
+Model: {output_from_model}
+
+Critique Request: {critique_request}
+
+Critique: {critique}
+
+Revision Request: {revision_request}
+
+Revision:`,
+    exampleSeparator: "\n === \n",
+    inputVariables: [
+        "input_prompt",
+        "output_from_model",
+        "critique_request",
+        "critique",
+        "revision_request",
+    ],
+});
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/constitutional_ai/constitutional_chain.js
+
+
+
+
+class ConstitutionalChain extends (/* unused pure expression or super */ null && (BaseChain)) {
+    get inputKeys() {
+        return this.chain.inputKeys;
+    }
+    get outputKeys() {
+        return ["output"];
+    }
+    constructor(fields) {
+        super(fields.memory, fields.verbose, fields.callbackManager);
+        Object.defineProperty(this, "chain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "constitutionalPrinciples", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "critiqueChain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "revisionChain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.chain = fields.chain;
+        this.constitutionalPrinciples = fields.constitutionalPrinciples;
+        this.critiqueChain = fields.critiqueChain;
+        this.revisionChain = fields.revisionChain;
+    }
+    async _call(values, runManager) {
+        let { [this.chain.outputKey]: response } = await this.chain.call(values, runManager?.getChild());
+        const inputPrompt = await this.chain.prompt.format(values);
+        for (let i = 0; i < this.constitutionalPrinciples.length; i += 1) {
+            const { [this.critiqueChain.outputKey]: rawCritique } = await this.critiqueChain.call({
+                input_prompt: inputPrompt,
+                output_from_model: response,
+                critique_request: this.constitutionalPrinciples[i].critiqueRequest,
+            }, runManager?.getChild());
+            const critique = ConstitutionalChain._parseCritique(rawCritique);
+            const { [this.revisionChain.outputKey]: revisionRaw } = await this.revisionChain.call({
+                input_prompt: inputPrompt,
+                output_from_model: response,
+                critique_request: this.constitutionalPrinciples[i].critiqueRequest,
+                critique,
+                revision_request: this.constitutionalPrinciples[i].revisionRequest,
+            }, runManager?.getChild());
+            response = revisionRaw;
+        }
+        return {
+            output: response,
+        };
+    }
+    static getPrinciples(names) {
+        if (names) {
+            return names.map((name) => PRINCIPLES[name]);
+        }
+        return Object.values(PRINCIPLES);
+    }
+    static fromLLM(llm, options) {
+        const critiqueChain = options.critiqueChain ??
+            new LLMChain({
+                llm,
+                prompt: CRITIQUE_PROMPT,
+            });
+        const revisionChain = options.revisionChain ??
+            new LLMChain({
+                llm,
+                prompt: REVISION_PROMPT,
+            });
+        return new this({
+            ...options,
+            chain: options.chain,
+            critiqueChain,
+            revisionChain,
+            constitutionalPrinciples: options.constitutionalPrinciples ?? [],
+        });
+    }
+    static _parseCritique(outputString) {
+        let output = outputString;
+        if (!output.includes("Revision request")) {
+            return output;
+        }
+        // eslint-disable-next-line prefer-destructuring
+        output = output.split("Revision request:")[0];
+        if (output.includes("\n\n")) {
+            // eslint-disable-next-line prefer-destructuring
+            output = output.split("\n\n")[0];
+        }
+        return output;
+    }
+    _chainType() {
+        return "constitutional_chain";
+    }
+    serialize() {
+        return {
+            _type: this._chainType(),
+            chain: this.chain.serialize(),
+            ConstitutionalPrinciple: this.constitutionalPrinciples.map((principle) => principle.serialize()),
+            critiqueChain: this.critiqueChain.serialize(),
+            revisionChain: this.revisionChain.serialize(),
+        };
+    }
+}
+
+// EXTERNAL MODULE: ./node_modules/langchain/node_modules/openai/dist/index.js
+var dist = __nccwpck_require__(8199);
+// EXTERNAL MODULE: ./node_modules/langchain/dist/util/axios-fetch-adapter.js + 1 modules
+var axios_fetch_adapter = __nccwpck_require__(43);
+// EXTERNAL MODULE: ./node_modules/langchain/dist/util/async_caller.js
+var async_caller = __nccwpck_require__(2723);
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/openai_moderation.js
+
+
+
+
+class OpenAIModerationChain extends (/* unused pure expression or super */ null && (BaseChain)) {
+    constructor(fields) {
+        super(fields);
+        Object.defineProperty(this, "inputKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "input"
+        });
+        Object.defineProperty(this, "outputKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "output"
+        });
+        Object.defineProperty(this, "openAIApiKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "openAIOrganization", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "clientConfig", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "client", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "throwError", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "caller", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.throwError = fields?.throwError ?? false;
+        this.openAIApiKey =
+            fields?.openAIApiKey ??
+                // eslint-disable-next-line no-process-env
+                (typeof process !== "undefined" ? process.env.OPENAI_API_KEY : undefined);
+        if (!this.openAIApiKey) {
+            throw new Error("OpenAI API key not found");
+        }
+        this.openAIOrganization = fields?.openAIOrganization;
+        this.clientConfig = new Configuration({
+            ...fields?.configuration,
+            apiKey: this.openAIApiKey,
+            organization: this.openAIOrganization,
+            baseOptions: {
+                adapter: fetchAdapter,
+                ...fields?.configuration?.baseOptions,
+            },
+        });
+        this.client = new OpenAIApi(this.clientConfig);
+        this.caller = new AsyncCaller(fields ?? {});
+    }
+    _moderate(text, results) {
+        if (results.flagged) {
+            const errorStr = "Text was found that violates OpenAI's content policy.";
+            if (this.throwError) {
+                throw new Error(errorStr);
+            }
+            else {
+                return errorStr;
+            }
+        }
+        return text;
+    }
+    async _call(values) {
+        const text = values[this.inputKey];
+        const moderationRequest = {
+            input: text,
+        };
+        let mod;
+        try {
+            mod = await this.caller.call(() => this.client.createModeration(moderationRequest));
+        }
+        catch (error) {
+            // eslint-disable-next-line no-instanceof/no-instanceof
+            if (error instanceof Error) {
+                throw error;
+            }
+            else {
+                throw new Error(error);
+            }
+        }
+        const output = this._moderate(text, mod.data.results[0]);
+        return {
+            [this.outputKey]: output,
+        };
+    }
+    _chainType() {
+        return "moderation_chain";
+    }
+    get inputKeys() {
+        return [this.inputKey];
+    }
+    get outputKeys() {
+        return [this.outputKey];
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/router/multi_route.js
+
+class multi_route_RouterChain extends (/* unused pure expression or super */ null && (BaseChain)) {
+    get outputKeys() {
+        return ["destination", "next_inputs"];
+    }
+    async route(inputs, callbacks) {
+        const result = await this.call(inputs, callbacks);
+        return {
+            destination: result.destination,
+            nextInputs: result.next_inputs,
+        };
+    }
+}
+class multi_route_MultiRouteChain extends (/* unused pure expression or super */ null && (BaseChain)) {
+    constructor(fields) {
+        super(fields);
+        Object.defineProperty(this, "routerChain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "destinationChains", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "defaultChain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "silentErrors", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        this.routerChain = fields.routerChain;
+        this.destinationChains = fields.destinationChains;
+        this.defaultChain = fields.defaultChain;
+        this.silentErrors = fields.silentErrors ?? this.silentErrors;
+    }
+    get inputKeys() {
+        return this.routerChain.inputKeys;
+    }
+    get outputKeys() {
+        return [];
+    }
+    async _call(values, runManager) {
+        const { destination, nextInputs } = await this.routerChain.route(values, runManager?.getChild());
+        await runManager?.handleText(`${destination}: ${JSON.stringify(nextInputs)}`);
+        if (!destination) {
+            return this.defaultChain
+                .call(nextInputs, runManager?.getChild())
+                .catch((err) => {
+                throw new Error(`Error in default chain: ${err}`);
+            });
+        }
+        if (destination in this.destinationChains) {
+            return this.destinationChains[destination]
+                .call(nextInputs, runManager?.getChild())
+                .catch((err) => {
+                throw new Error(`Error in ${destination} chain: ${err}`);
+            });
+        }
+        if (this.silentErrors) {
+            return this.defaultChain
+                .call(nextInputs, runManager?.getChild())
+                .catch((err) => {
+                throw new Error(`Error in default chain: ${err}`);
+            });
+        }
+        throw new Error(`Destination ${destination} not found in destination chains with keys ${Object.keys(this.destinationChains)}`);
+    }
+    _chainType() {
+        return "multi_route_chain";
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/router/llm_router.js
+
+
+class llm_router_LLMRouterChain extends (/* unused pure expression or super */ null && (RouterChain)) {
+    constructor(fields) {
+        super(fields);
+        Object.defineProperty(this, "llmChain", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.llmChain = fields.llmChain;
+    }
+    get inputKeys() {
+        return this.llmChain.inputKeys;
+    }
+    async _call(values, runManager) {
+        return this.llmChain.predict(values, runManager?.getChild());
+    }
+    _chainType() {
+        return "llm_router_chain";
+    }
+    static fromLLM(llm, prompt, options) {
+        const llmChain = new LLMChain({ llm, prompt });
+        return new llm_router_LLMRouterChain({ ...options, llmChain });
+    }
+}
+
+// EXTERNAL MODULE: ./node_modules/langchain/dist/prompts/template.js
+var prompts_template = __nccwpck_require__(837);
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/Options.js
+const Options_ignoreOverride = Symbol("Let zodToJsonSchema decide on which parser to use");
+const defaultOptions = {
+    name: undefined,
+    $refStrategy: "root",
+    basePath: ["#"],
+    effectStrategy: "input",
+    pipeStrategy: "all",
+    dateStrategy: "format:date-time",
+    mapStrategy: "entries",
+    removeAdditionalStrategy: "passthrough",
+    definitionPath: "definitions",
+    target: "jsonSchema7",
+    strictUnions: false,
+    definitions: {},
+    errorMessages: false,
+    markdownDescription: false,
+    patternStrategy: "escape",
+    emailStrategy: "format:email",
+    base64Strategy: "contentEncoding:base64",
+};
+const Options_getDefaultOptions = (options) => (typeof options === "string"
+    ? {
+        ...defaultOptions,
+        name: options,
+    }
+    : {
+        ...defaultOptions,
+        ...options,
+    });
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/Refs.js
+
+const Refs_getRefs = (options) => {
+    const _options = getDefaultOptions(options);
+    const currentPath = _options.name !== undefined
+        ? [..._options.basePath, _options.definitionPath, _options.name]
+        : _options.basePath;
+    return {
+        ..._options,
+        currentPath: currentPath,
+        propertyPath: undefined,
+        seen: new Map(Object.entries(_options.definitions).map(([name, def]) => [
+            def._def,
+            {
+                def: def._def,
+                path: [..._options.basePath, _options.definitionPath, name],
+                // Resolution of references will be forced even though seen, so it's ok that the schema is undefined here for now.
+                jsonSchema: undefined,
+            },
+        ])),
+    };
+};
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/array.js
+
+
+
+function array_parseArrayDef(def, refs) {
+    const res = {
+        type: "array",
+    };
+    if (def.type?._def?.typeName !== ZodFirstPartyTypeKind.ZodAny) {
+        res.items = parseDef(def.type._def, {
+            ...refs,
+            currentPath: [...refs.currentPath, "items"],
+        });
+    }
+    if (def.minLength) {
+        setResponseValueAndErrors(res, "minItems", def.minLength.value, def.minLength.message, refs);
+    }
+    if (def.maxLength) {
+        setResponseValueAndErrors(res, "maxItems", def.maxLength.value, def.maxLength.message, refs);
+    }
+    if (def.exactLength) {
+        setResponseValueAndErrors(res, "minItems", def.exactLength.value, def.exactLength.message, refs);
+        setResponseValueAndErrors(res, "maxItems", def.exactLength.value, def.exactLength.message, refs);
+    }
+    return res;
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/branded.js
+
+function branded_parseBrandedDef(_def, refs) {
+    return parseDef(_def.type._def, refs);
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/catch.js
+
+const catch_parseCatchDef = (def, refs) => {
+    return parseDef(def.innerType._def, refs);
+};
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/default.js
+
+function default_parseDefaultDef(_def, refs) {
+    return {
+        ...parseDef(_def.innerType._def, refs),
+        default: _def.defaultValue(),
+    };
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/effects.js
+
+function effects_parseEffectsDef(_def, refs) {
+    return refs.effectStrategy === "input"
+        ? parseDef(_def.schema._def, refs)
+        : {};
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/intersection.js
+
+const isJsonSchema7AllOfType = (type) => {
+    if ("type" in type && type.type === "string")
+        return false;
+    return "allOf" in type;
+};
+function intersection_parseIntersectionDef(def, refs) {
+    const allOf = [
+        parseDef(def.left._def, {
+            ...refs,
+            currentPath: [...refs.currentPath, "allOf", "0"],
+        }),
+        parseDef(def.right._def, {
+            ...refs,
+            currentPath: [...refs.currentPath, "allOf", "1"],
+        }),
+    ].filter((x) => !!x);
+    let unevaluatedProperties = refs.target === "jsonSchema2019-09"
+        ? { unevaluatedProperties: false }
+        : undefined;
+    const mergedAllOf = [];
+    // If either of the schemas is an allOf, merge them into a single allOf
+    allOf.forEach((schema) => {
+        if (isJsonSchema7AllOfType(schema)) {
+            mergedAllOf.push(...schema.allOf);
+            if (schema.unevaluatedProperties === undefined) {
+                // If one of the schemas has no unevaluatedProperties set,
+                // the merged schema should also have no unevaluatedProperties set
+                unevaluatedProperties = undefined;
+            }
+        }
+        else {
+            let nestedSchema = schema;
+            if ("additionalProperties" in schema &&
+                schema.additionalProperties === false) {
+                const { additionalProperties, ...rest } = schema;
+                nestedSchema = rest;
+            }
+            else {
+                // As soon as one of the schemas has additionalProperties set not to false, we allow unevaluatedProperties
+                unevaluatedProperties = undefined;
+            }
+            mergedAllOf.push(nestedSchema);
+        }
+    });
+    return mergedAllOf.length
+        ? {
+            allOf: mergedAllOf,
+            ...unevaluatedProperties,
+        }
+        : undefined;
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/string.js
+
+/**
+ * Generated from the .source property of regular expressins found here:
+ * https://github.com/colinhacks/zod/blob/master/src/types.ts.
+ *
+ * Escapes have been doubled, and expressions with /i flag have been changed accordingly
+ */
+const zodPatterns = {
+    /**
+     * `c` was changed to `[cC]` to replicate /i flag
+     */
+    cuid: "^[cC][^\\s-]{8,}$",
+    cuid2: "^[a-z][a-z0-9]*$",
+    ulid: "^[0-9A-HJKMNP-TV-Z]{26}$",
+    /**
+     * `a-z` was added to replicate /i flag
+     */
+    email: "^(?!\\.)(?!.*\\.\\.)([a-zA-Z0-9_+-\\.]*)[a-zA-Z0-9_+-]@([a-zA-Z0-9][a-zA-Z0-9\\-]*\\.)+[a-zA-Z]{2,}$",
+    emoji: "^(\\p{Extended_Pictographic}|\\p{Emoji_Component})+$",
+    /**
+     * Unused
+     */
+    uuid: "^[0-9a-fA-F]{8}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{12}$",
+    /**
+     * Unused
+     */
+    ipv4: "^(((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2}))\\.){3}((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2}))$",
+    /**
+     * Unused
+     */
+    ipv6: "^(([a-f0-9]{1,4}:){7}|::([a-f0-9]{1,4}:){0,6}|([a-f0-9]{1,4}:){1}:([a-f0-9]{1,4}:){0,5}|([a-f0-9]{1,4}:){2}:([a-f0-9]{1,4}:){0,4}|([a-f0-9]{1,4}:){3}:([a-f0-9]{1,4}:){0,3}|([a-f0-9]{1,4}:){4}:([a-f0-9]{1,4}:){0,2}|([a-f0-9]{1,4}:){5}:([a-f0-9]{1,4}:){0,1})([a-f0-9]{1,4}|(((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2}))\\.){3}((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2})))$",
+    base64: "^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$",
+    nanoid: "^[a-zA-Z0-9_-]{21}$",
+};
+function string_parseStringDef(def, refs) {
+    const res = {
+        type: "string",
+    };
+    function processPattern(value) {
+        return refs.patternStrategy === "escape"
+            ? escapeNonAlphaNumeric(value)
+            : value;
+    }
+    if (def.checks) {
+        for (const check of def.checks) {
+            switch (check.kind) {
+                case "min":
+                    setResponseValueAndErrors(res, "minLength", typeof res.minLength === "number"
+                        ? Math.max(res.minLength, check.value)
+                        : check.value, check.message, refs);
+                    break;
+                case "max":
+                    setResponseValueAndErrors(res, "maxLength", typeof res.maxLength === "number"
+                        ? Math.min(res.maxLength, check.value)
+                        : check.value, check.message, refs);
+                    break;
+                case "email":
+                    switch (refs.emailStrategy) {
+                        case "format:email":
+                            addFormat(res, "email", check.message, refs);
+                            break;
+                        case "format:idn-email":
+                            addFormat(res, "idn-email", check.message, refs);
+                            break;
+                        case "pattern:zod":
+                            addPattern(res, zodPatterns.email, check.message, refs);
+                            break;
+                    }
+                    break;
+                case "url":
+                    addFormat(res, "uri", check.message, refs);
+                    break;
+                case "uuid":
+                    addFormat(res, "uuid", check.message, refs);
+                    break;
+                case "regex":
+                    addPattern(res, check.regex.source, check.message, refs);
+                    break;
+                case "cuid":
+                    addPattern(res, zodPatterns.cuid, check.message, refs);
+                    break;
+                case "cuid2":
+                    addPattern(res, zodPatterns.cuid2, check.message, refs);
+                    break;
+                case "startsWith":
+                    addPattern(res, "^" + processPattern(check.value), check.message, refs);
+                    break;
+                case "endsWith":
+                    addPattern(res, processPattern(check.value) + "$", check.message, refs);
+                    break;
+                case "datetime":
+                    addFormat(res, "date-time", check.message, refs);
+                    break;
+                case "date":
+                    addFormat(res, "date", check.message, refs);
+                    break;
+                case "time":
+                    addFormat(res, "time", check.message, refs);
+                    break;
+                case "duration":
+                    addFormat(res, "duration", check.message, refs);
+                    break;
+                case "length":
+                    setResponseValueAndErrors(res, "minLength", typeof res.minLength === "number"
+                        ? Math.max(res.minLength, check.value)
+                        : check.value, check.message, refs);
+                    setResponseValueAndErrors(res, "maxLength", typeof res.maxLength === "number"
+                        ? Math.min(res.maxLength, check.value)
+                        : check.value, check.message, refs);
+                    break;
+                case "includes": {
+                    addPattern(res, processPattern(check.value), check.message, refs);
+                    break;
+                }
+                case "ip": {
+                    if (check.version !== "v6") {
+                        addFormat(res, "ipv4", check.message, refs);
+                    }
+                    if (check.version !== "v4") {
+                        addFormat(res, "ipv6", check.message, refs);
+                    }
+                    break;
+                }
+                case "emoji":
+                    addPattern(res, zodPatterns.emoji, check.message, refs);
+                    break;
+                case "ulid": {
+                    addPattern(res, zodPatterns.ulid, check.message, refs);
+                    break;
+                }
+                case "base64": {
+                    switch (refs.base64Strategy) {
+                        case "format:binary": {
+                            addFormat(res, "binary", check.message, refs);
+                            break;
+                        }
+                        case "contentEncoding:base64": {
+                            setResponseValueAndErrors(res, "contentEncoding", "base64", check.message, refs);
+                            break;
+                        }
+                        case "pattern:zod": {
+                            addPattern(res, zodPatterns.base64, check.message, refs);
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case "nanoid": {
+                    addPattern(res, zodPatterns.nanoid, check.message, refs);
+                }
+                case "toLowerCase":
+                case "toUpperCase":
+                case "trim":
+                    break;
+                default:
+                    ((_) => { })(check);
+            }
+        }
+    }
+    return res;
+}
+const escapeNonAlphaNumeric = (value) => Array.from(value)
+    .map((c) => (/[a-zA-Z0-9]/.test(c) ? c : `\\${c}`))
+    .join("");
+const addFormat = (schema, value, message, refs) => {
+    if (schema.format || schema.anyOf?.some((x) => x.format)) {
+        if (!schema.anyOf) {
+            schema.anyOf = [];
+        }
+        if (schema.format) {
+            schema.anyOf.push({
+                format: schema.format,
+                ...(schema.errorMessage &&
+                    refs.errorMessages && {
+                    errorMessage: { format: schema.errorMessage.format },
+                }),
+            });
+            delete schema.format;
+            if (schema.errorMessage) {
+                delete schema.errorMessage.format;
+                if (Object.keys(schema.errorMessage).length === 0) {
+                    delete schema.errorMessage;
+                }
+            }
+        }
+        schema.anyOf.push({
+            format: value,
+            ...(message &&
+                refs.errorMessages && { errorMessage: { format: message } }),
+        });
+    }
+    else {
+        setResponseValueAndErrors(schema, "format", value, message, refs);
+    }
+};
+const addPattern = (schema, value, message, refs) => {
+    if (schema.pattern || schema.allOf?.some((x) => x.pattern)) {
+        if (!schema.allOf) {
+            schema.allOf = [];
+        }
+        if (schema.pattern) {
+            schema.allOf.push({
+                pattern: schema.pattern,
+                ...(schema.errorMessage &&
+                    refs.errorMessages && {
+                    errorMessage: { pattern: schema.errorMessage.pattern },
+                }),
+            });
+            delete schema.pattern;
+            if (schema.errorMessage) {
+                delete schema.errorMessage.pattern;
+                if (Object.keys(schema.errorMessage).length === 0) {
+                    delete schema.errorMessage;
+                }
+            }
+        }
+        schema.allOf.push({
+            pattern: value,
+            ...(message &&
+                refs.errorMessages && { errorMessage: { pattern: message } }),
+        });
+    }
+    else {
+        setResponseValueAndErrors(schema, "pattern", value, message, refs);
+    }
+};
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/record.js
+
+
+
+function record_parseRecordDef(def, refs) {
+    if (refs.target === "openApi3" &&
+        def.keyType?._def.typeName === ZodFirstPartyTypeKind.ZodEnum) {
+        return {
+            type: "object",
+            required: def.keyType._def.values,
+            properties: def.keyType._def.values.reduce((acc, key) => ({
+                ...acc,
+                [key]: parseDef(def.valueType._def, {
+                    ...refs,
+                    currentPath: [...refs.currentPath, "properties", key],
+                }) ?? {},
+            }), {}),
+            additionalProperties: false,
+        };
+    }
+    const schema = {
+        type: "object",
+        additionalProperties: parseDef(def.valueType._def, {
+            ...refs,
+            currentPath: [...refs.currentPath, "additionalProperties"],
+        }) ?? {},
+    };
+    if (refs.target === "openApi3") {
+        return schema;
+    }
+    if (def.keyType?._def.typeName === ZodFirstPartyTypeKind.ZodString &&
+        def.keyType._def.checks?.length) {
+        const keyType = Object.entries(parseStringDef(def.keyType._def, refs)).reduce((acc, [key, value]) => (key === "type" ? acc : { ...acc, [key]: value }), {});
+        return {
+            ...schema,
+            propertyNames: keyType,
+        };
+    }
+    else if (def.keyType?._def.typeName === ZodFirstPartyTypeKind.ZodEnum) {
+        return {
+            ...schema,
+            propertyNames: {
+                enum: def.keyType._def.values,
+            },
+        };
+    }
+    return schema;
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/map.js
+
+
+function map_parseMapDef(def, refs) {
+    if (refs.mapStrategy === "record") {
+        return parseRecordDef(def, refs);
+    }
+    const keys = parseDef(def.keyType._def, {
+        ...refs,
+        currentPath: [...refs.currentPath, "items", "items", "0"],
+    }) || {};
+    const values = parseDef(def.valueType._def, {
+        ...refs,
+        currentPath: [...refs.currentPath, "items", "items", "1"],
+    }) || {};
+    return {
+        type: "array",
+        maxItems: 125,
+        items: {
+            type: "array",
+            items: [keys, values],
+            minItems: 2,
+            maxItems: 2,
+        },
+    };
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/union.js
+
+const union_primitiveMappings = {
+    ZodString: "string",
+    ZodNumber: "number",
+    ZodBigInt: "integer",
+    ZodBoolean: "boolean",
+    ZodNull: "null",
+};
+function union_parseUnionDef(def, refs) {
+    if (refs.target === "openApi3")
+        return asAnyOf(def, refs);
+    const options = def.options instanceof Map ? Array.from(def.options.values()) : def.options;
+    // This blocks tries to look ahead a bit to produce nicer looking schemas with type array instead of anyOf.
+    if (options.every((x) => x._def.typeName in union_primitiveMappings &&
+        (!x._def.checks || !x._def.checks.length))) {
+        // all types in union are primitive and lack checks, so might as well squash into {type: [...]}
+        const types = options.reduce((types, x) => {
+            const type = union_primitiveMappings[x._def.typeName]; //Can be safely casted due to row 43
+            return type && !types.includes(type) ? [...types, type] : types;
+        }, []);
+        return {
+            type: types.length > 1 ? types : types[0],
+        };
+    }
+    else if (options.every((x) => x._def.typeName === "ZodLiteral" && !x.description)) {
+        // all options literals
+        const types = options.reduce((acc, x) => {
+            const type = typeof x._def.value;
+            switch (type) {
+                case "string":
+                case "number":
+                case "boolean":
+                    return [...acc, type];
+                case "bigint":
+                    return [...acc, "integer"];
+                case "object":
+                    if (x._def.value === null)
+                        return [...acc, "null"];
+                case "symbol":
+                case "undefined":
+                case "function":
+                default:
+                    return acc;
+            }
+        }, []);
+        if (types.length === options.length) {
+            // all the literals are primitive, as far as null can be considered primitive
+            const uniqueTypes = types.filter((x, i, a) => a.indexOf(x) === i);
+            return {
+                type: uniqueTypes.length > 1 ? uniqueTypes : uniqueTypes[0],
+                enum: options.reduce((acc, x) => {
+                    return acc.includes(x._def.value) ? acc : [...acc, x._def.value];
+                }, []),
+            };
+        }
+    }
+    else if (options.every((x) => x._def.typeName === "ZodEnum")) {
+        return {
+            type: "string",
+            enum: options.reduce((acc, x) => [
+                ...acc,
+                ...x._def.values.filter((x) => !acc.includes(x)),
+            ], []),
+        };
+    }
+    return asAnyOf(def, refs);
+}
+const asAnyOf = (def, refs) => {
+    const anyOf = (def.options instanceof Map
+        ? Array.from(def.options.values())
+        : def.options)
+        .map((x, i) => parseDef(x._def, {
+        ...refs,
+        currentPath: [...refs.currentPath, "anyOf", `${i}`],
+    }))
+        .filter((x) => !!x &&
+        (!refs.strictUnions ||
+            (typeof x === "object" && Object.keys(x).length > 0)));
+    return anyOf.length ? { anyOf } : undefined;
+};
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js
+
+
+function nullable_parseNullableDef(def, refs) {
+    if (["ZodString", "ZodNumber", "ZodBigInt", "ZodBoolean", "ZodNull"].includes(def.innerType._def.typeName) &&
+        (!def.innerType._def.checks || !def.innerType._def.checks.length)) {
+        if (refs.target === "openApi3") {
+            return {
+                type: primitiveMappings[def.innerType._def.typeName],
+                nullable: true,
+            };
+        }
+        return {
+            type: [
+                primitiveMappings[def.innerType._def.typeName],
+                "null",
+            ],
+        };
+    }
+    if (refs.target === "openApi3") {
+        const base = parseDef(def.innerType._def, {
+            ...refs,
+            currentPath: [...refs.currentPath],
+        });
+        if (base && '$ref' in base)
+            return { allOf: [base], nullable: true };
+        return base && { ...base, nullable: true };
+    }
+    const base = parseDef(def.innerType._def, {
+        ...refs,
+        currentPath: [...refs.currentPath, "anyOf", "0"],
+    });
+    return base && { anyOf: [base, { type: "null" }] };
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/object.js
+
+function decideAdditionalProperties(def, refs) {
+    if (refs.removeAdditionalStrategy === "strict") {
+        return def.catchall._def.typeName === "ZodNever"
+            ? def.unknownKeys !== "strict"
+            : parseDef(def.catchall._def, {
+                ...refs,
+                currentPath: [...refs.currentPath, "additionalProperties"],
+            }) ?? true;
+    }
+    else {
+        return def.catchall._def.typeName === "ZodNever"
+            ? def.unknownKeys === "passthrough"
+            : parseDef(def.catchall._def, {
+                ...refs,
+                currentPath: [...refs.currentPath, "additionalProperties"],
+            }) ?? true;
+    }
+}
+;
+function parseObjectDefX(def, refs) {
+    Object.keys(def.shape()).reduce((schema, key) => {
+        let prop = def.shape()[key];
+        const isOptional = prop.isOptional();
+        if (!isOptional) {
+            prop = { ...prop._def.innerSchema };
+        }
+        const propSchema = parseDef(prop._def, {
+            ...refs,
+            currentPath: [...refs.currentPath, "properties", key],
+            propertyPath: [...refs.currentPath, "properties", key],
+        });
+        if (propSchema !== undefined) {
+            schema.properties[key] = propSchema;
+            if (!isOptional) {
+                if (!schema.required) {
+                    schema.required = [];
+                }
+                schema.required.push(key);
+            }
+        }
+        return schema;
+    }, {
+        type: "object",
+        properties: {},
+        additionalProperties: decideAdditionalProperties(def, refs),
+    });
+    const result = {
+        type: "object",
+        ...Object.entries(def.shape()).reduce((acc, [propName, propDef]) => {
+            if (propDef === undefined || propDef._def === undefined)
+                return acc;
+            const parsedDef = parseDef(propDef._def, {
+                ...refs,
+                currentPath: [...refs.currentPath, "properties", propName],
+                propertyPath: [...refs.currentPath, "properties", propName],
+            });
+            if (parsedDef === undefined)
+                return acc;
+            return {
+                properties: { ...acc.properties, [propName]: parsedDef },
+                required: propDef.isOptional()
+                    ? acc.required
+                    : [...acc.required, propName],
+            };
+        }, { properties: {}, required: [] }),
+        additionalProperties: decideAdditionalProperties(def, refs),
+    };
+    if (!result.required.length)
+        delete result.required;
+    return result;
+}
+function object_parseObjectDef(def, refs) {
+    const result = {
+        type: "object",
+        ...Object.entries(def.shape()).reduce((acc, [propName, propDef]) => {
+            if (propDef === undefined || propDef._def === undefined)
+                return acc;
+            const parsedDef = parseDef(propDef._def, {
+                ...refs,
+                currentPath: [...refs.currentPath, "properties", propName],
+                propertyPath: [...refs.currentPath, "properties", propName],
+            });
+            if (parsedDef === undefined)
+                return acc;
+            return {
+                properties: { ...acc.properties, [propName]: parsedDef },
+                required: propDef.isOptional()
+                    ? acc.required
+                    : [...acc.required, propName],
+            };
+        }, { properties: {}, required: [] }),
+        additionalProperties: decideAdditionalProperties(def, refs),
+    };
+    if (!result.required.length)
+        delete result.required;
+    return result;
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/optional.js
+
+const optional_parseOptionalDef = (def, refs) => {
+    if (refs.currentPath.toString() === refs.propertyPath?.toString()) {
+        return parseDef(def.innerType._def, refs);
+    }
+    const innerSchema = parseDef(def.innerType._def, {
+        ...refs,
+        currentPath: [...refs.currentPath, "anyOf", "1"],
+    });
+    return innerSchema
+        ? {
+            anyOf: [
+                {
+                    not: {},
+                },
+                innerSchema,
+            ],
+        }
+        : {};
+};
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/pipeline.js
+
+const pipeline_parsePipelineDef = (def, refs) => {
+    if (refs.pipeStrategy === "input") {
+        return parseDef(def.in._def, refs);
+    }
+    else if (refs.pipeStrategy === "output") {
+        return parseDef(def.out._def, refs);
+    }
+    const a = parseDef(def.in._def, {
+        ...refs,
+        currentPath: [...refs.currentPath, "allOf", "0"],
+    });
+    const b = parseDef(def.out._def, {
+        ...refs,
+        currentPath: [...refs.currentPath, "allOf", a ? "1" : "0"],
+    });
+    return {
+        allOf: [a, b].filter((x) => x !== undefined),
+    };
+};
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/promise.js
+
+function promise_parsePromiseDef(def, refs) {
+    return parseDef(def.type._def, refs);
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/set.js
+
+
+function set_parseSetDef(def, refs) {
+    const items = parseDef(def.valueType._def, {
+        ...refs,
+        currentPath: [...refs.currentPath, "items"],
+    });
+    const schema = {
+        type: "array",
+        uniqueItems: true,
+        items,
+    };
+    if (def.minSize) {
+        setResponseValueAndErrors(schema, "minItems", def.minSize.value, def.minSize.message, refs);
+    }
+    if (def.maxSize) {
+        setResponseValueAndErrors(schema, "maxItems", def.maxSize.value, def.maxSize.message, refs);
+    }
+    return schema;
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/tuple.js
+
+function tuple_parseTupleDef(def, refs) {
+    if (def.rest) {
+        return {
+            type: "array",
+            minItems: def.items.length,
+            items: def.items
+                .map((x, i) => parseDef(x._def, {
+                ...refs,
+                currentPath: [...refs.currentPath, "items", `${i}`],
+            }))
+                .reduce((acc, x) => (x === undefined ? acc : [...acc, x]), []),
+            additionalItems: parseDef(def.rest._def, {
+                ...refs,
+                currentPath: [...refs.currentPath, "additionalItems"],
+            }),
+        };
+    }
+    else {
+        return {
+            type: "array",
+            minItems: def.items.length,
+            maxItems: def.items.length,
+            items: def.items
+                .map((x, i) => parseDef(x._def, {
+                ...refs,
+                currentPath: [...refs.currentPath, "items", `${i}`],
+            }))
+                .reduce((acc, x) => (x === undefined ? acc : [...acc, x]), []),
+        };
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/readonly.js
+
+const readonly_parseReadonlyDef = (def, refs) => {
+    return parseDef(def.innerType._def, refs);
+};
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parseDef.js
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function parseDef_parseDef(def, refs, forceResolution = false) {
+    const seenItem = refs.seen.get(def);
+    if (refs.override) {
+        const overrideResult = refs.override?.(def, refs, seenItem, forceResolution);
+        if (overrideResult !== ignoreOverride) {
+            return overrideResult;
+        }
+    }
+    if (seenItem && !forceResolution) {
+        const seenSchema = get$ref(seenItem, refs);
+        if (seenSchema !== undefined) {
+            return seenSchema;
+        }
+    }
+    const newItem = { def, path: refs.currentPath, jsonSchema: undefined };
+    refs.seen.set(def, newItem);
+    const jsonSchema = selectParser(def, def.typeName, refs);
+    if (jsonSchema) {
+        addMeta(def, refs, jsonSchema);
+    }
+    newItem.jsonSchema = jsonSchema;
+    return jsonSchema;
+}
+const get$ref = (item, refs) => {
+    switch (refs.$refStrategy) {
+        case "root":
+            return { $ref: item.path.join("/") };
+        case "relative":
+            return { $ref: getRelativePath(refs.currentPath, item.path) };
+        case "none":
+        case "seen": {
+            if (item.path.length < refs.currentPath.length &&
+                item.path.every((value, index) => refs.currentPath[index] === value)) {
+                console.warn(`Recursive reference detected at ${refs.currentPath.join("/")}! Defaulting to any`);
+                return {};
+            }
+            return refs.$refStrategy === "seen" ? {} : undefined;
+        }
+    }
+};
+const getRelativePath = (pathA, pathB) => {
+    let i = 0;
+    for (; i < pathA.length && i < pathB.length; i++) {
+        if (pathA[i] !== pathB[i])
+            break;
+    }
+    return [(pathA.length - i).toString(), ...pathB.slice(i)].join("/");
+};
+const selectParser = (def, typeName, refs) => {
+    switch (typeName) {
+        case ZodFirstPartyTypeKind.ZodString:
+            return parseStringDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodNumber:
+            return parseNumberDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodObject:
+            return parseObjectDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodBigInt:
+            return parseBigintDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodBoolean:
+            return parseBooleanDef();
+        case ZodFirstPartyTypeKind.ZodDate:
+            return parseDateDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodUndefined:
+            return parseUndefinedDef();
+        case ZodFirstPartyTypeKind.ZodNull:
+            return parseNullDef(refs);
+        case ZodFirstPartyTypeKind.ZodArray:
+            return parseArrayDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodUnion:
+        case ZodFirstPartyTypeKind.ZodDiscriminatedUnion:
+            return parseUnionDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodIntersection:
+            return parseIntersectionDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodTuple:
+            return parseTupleDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodRecord:
+            return parseRecordDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodLiteral:
+            return parseLiteralDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodEnum:
+            return parseEnumDef(def);
+        case ZodFirstPartyTypeKind.ZodNativeEnum:
+            return parseNativeEnumDef(def);
+        case ZodFirstPartyTypeKind.ZodNullable:
+            return parseNullableDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodOptional:
+            return parseOptionalDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodMap:
+            return parseMapDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodSet:
+            return parseSetDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodLazy:
+            return parseDef_parseDef(def.getter()._def, refs);
+        case ZodFirstPartyTypeKind.ZodPromise:
+            return parsePromiseDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodNaN:
+        case ZodFirstPartyTypeKind.ZodNever:
+            return parseNeverDef();
+        case ZodFirstPartyTypeKind.ZodEffects:
+            return parseEffectsDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodAny:
+            return parseAnyDef();
+        case ZodFirstPartyTypeKind.ZodUnknown:
+            return parseUnknownDef();
+        case ZodFirstPartyTypeKind.ZodDefault:
+            return parseDefaultDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodBranded:
+            return parseBrandedDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodReadonly:
+            return parseReadonlyDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodCatch:
+            return parseCatchDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodPipeline:
+            return parsePipelineDef(def, refs);
+        case ZodFirstPartyTypeKind.ZodFunction:
+        case ZodFirstPartyTypeKind.ZodVoid:
+        case ZodFirstPartyTypeKind.ZodSymbol:
+            return undefined;
+        default:
+            return ((_) => undefined)(typeName);
+    }
+};
+const addMeta = (def, refs, jsonSchema) => {
+    if (def.description) {
+        jsonSchema.description = def.description;
+        if (refs.markdownDescription) {
+            jsonSchema.markdownDescription = def.description;
+        }
+    }
+    return jsonSchema;
+};
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/zodToJsonSchema.js
+
+
+const zodToJsonSchema_zodToJsonSchema = (schema, options) => {
+    const refs = getRefs(options);
+    const definitions = typeof options === "object" && options.definitions
+        ? Object.entries(options.definitions).reduce((acc, [name, schema]) => ({
+            ...acc,
+            [name]: parseDef(schema._def, {
+                ...refs,
+                currentPath: [...refs.basePath, refs.definitionPath, name],
+            }, true) ?? {},
+        }), {})
+        : undefined;
+    const name = typeof options === "string" ? options : options?.name;
+    const main = parseDef(schema._def, name === undefined
+        ? refs
+        : {
+            ...refs,
+            currentPath: [...refs.basePath, refs.definitionPath, name],
+        }, false) ?? {};
+    const combined = name === undefined
+        ? definitions
+            ? {
+                ...main,
+                [refs.definitionPath]: definitions,
+            }
+            : main
+        : {
+            $ref: [
+                ...(refs.$refStrategy === "relative" ? [] : refs.basePath),
+                refs.definitionPath,
+                name,
+            ].join("/"),
+            [refs.definitionPath]: {
+                ...definitions,
+                [name]: main,
+            },
+        };
+    if (refs.target === "jsonSchema7") {
+        combined.$schema = "http://json-schema.org/draft-07/schema#";
+    }
+    else if (refs.target === "jsonSchema2019-09") {
+        combined.$schema = "https://json-schema.org/draft/2019-09/schema#";
+    }
+    return combined;
+};
+
+
+;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/index.js
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* harmony default export */ const esm = ((/* unused pure expression or super */ null && (zodToJsonSchema)));
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/schema/output_parser.js
+/** Class to parse the output of an LLM call.
+ */
+class output_parser_BaseOutputParser {
+    async parseWithPrompt(text, _prompt, callbacks) {
+        return this.parse(text, callbacks);
+    }
+    /**
+     * Return the string type key uniquely identifying this class of parser
+     */
+    _type() {
+        throw new Error("_type not implemented");
+    }
+}
+class output_parser_OutputParserException extends Error {
+    constructor(message, output) {
+        super(message);
+        Object.defineProperty(this, "output", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.output = output;
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/output_parsers/structured.js
+
+
+
+class StructuredOutputParser extends (/* unused pure expression or super */ null && (BaseOutputParser)) {
+    constructor(schema) {
+        super();
+        Object.defineProperty(this, "schema", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: schema
+        });
+    }
+    static fromZodSchema(schema) {
+        return new this(schema);
+    }
+    static fromNamesAndDescriptions(schemas) {
+        const zodSchema = z.object(Object.fromEntries(Object.entries(schemas).map(([name, description]) => [name, z.string().describe(description)])));
+        return new this(zodSchema);
+    }
+    getFormatInstructions() {
+        return `You must format your output as a JSON value that adheres to a given "JSON Schema" instance.
+
+"JSON Schema" is a declarative language that allows you to annotate and validate JSON documents.
+
+For example, the example "JSON Schema" instance {{"properties": {{"foo": {{"description": "a list of test words", "type": "array", "items": {{"type": "string"}}}}}}, "required": ["foo"]}}}}
+would match an object with one required property, "foo". The "type" property specifies "foo" must be an "array", and the "description" property semantically describes it as "a list of test words". The items within "foo" must be strings.
+Thus, the object {{"foo": ["bar", "baz"]}} is a well-formatted instance of this example "JSON Schema". The object {{"properties": {{"foo": ["bar", "baz"]}}}} is not well-formatted.
+
+Your output will be parsed and type-checked according to the provided schema instance, so make sure all fields in your output match the schema exactly and there are no trailing commas!
+
+Here is the JSON Schema instance your output must adhere to. Include the enclosing markdown codeblock:
+\`\`\`json
+${JSON.stringify(zodToJsonSchema(this.schema))}
+\`\`\`
+`;
+    }
+    async parse(text) {
+        try {
+            const json = text.includes("```")
+                ? text.trim().split(/```(?:json)?/)[1]
+                : text.trim();
+            return this.schema.parseAsync(JSON.parse(json));
+        }
+        catch (e) {
+            throw new OutputParserException(`Failed to parse. Text: "${text}". Error: ${e}`, text);
+        }
+    }
+}
+class structured_JsonMarkdownStructuredOutputParser extends (/* unused pure expression or super */ null && (StructuredOutputParser)) {
+    getFormatInstructions(options) {
+        const interpolationDepth = options?.interpolationDepth ?? 1;
+        if (interpolationDepth < 1) {
+            throw new Error("f string interpolation depth must be at least 1");
+        }
+        return `Return a markdown code snippet with a JSON object formatted to look like:\n\`\`\`json\n${this._schemaToInstruction(zodToJsonSchema(this.schema))
+            .replaceAll("{", "{".repeat(interpolationDepth))
+            .replaceAll("}", "}".repeat(interpolationDepth))}\n\`\`\``;
+    }
+    _schemaToInstruction(schemaInput, indent = 2) {
+        const schema = schemaInput;
+        let nullable = false;
+        if (Array.isArray(schema.type)) {
+            const [actualType, nullStr] = schema.type;
+            nullable = nullStr === "null";
+            schema.type = actualType;
+        }
+        if (schema.type === "object" && schema.properties) {
+            const description = schema.description ? ` // ${schema.description}` : "";
+            const properties = Object.entries(schema.properties)
+                .map(([key, value]) => {
+                const isOptional = schema.required?.includes(key)
+                    ? ""
+                    : " (optional)";
+                return `${" ".repeat(indent)}"${key}": ${this._schemaToInstruction(value, indent + 2)}${isOptional}`;
+            })
+                .join("\n");
+            return `{\n${properties}\n${" ".repeat(indent - 2)}}${description}`;
+        }
+        if (schema.type === "array" && schema.items) {
+            const description = schema.description ? ` // ${schema.description}` : "";
+            return `array[\n${" ".repeat(indent)}${this._schemaToInstruction(schema.items)}\n${" ".repeat(indent - 2)}] ${description}`;
+        }
+        const isNullable = nullable ? " (nullable)" : "";
+        const description = schema.description ? ` // ${schema.description}` : "";
+        return `${schema.type}${description}${isNullable}`;
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/output_parsers/router.js
+
+
+class router_RouterOutputParser extends (/* unused pure expression or super */ null && (JsonMarkdownStructuredOutputParser)) {
+    constructor(schema, options) {
+        super(schema);
+        Object.defineProperty(this, "defaultDestination", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "DEFAULT"
+        });
+        this.defaultDestination =
+            options?.defaultDestination ?? this.defaultDestination;
+    }
+    async parse(text) {
+        try {
+            const parsedText = await super.parse(text);
+            if (parsedText.destination?.toLowerCase() ===
+                this.defaultDestination.toLowerCase()) {
+                parsedText.destination = null;
+            }
+            return parsedText;
+        }
+        catch (e) {
+            throw new OutputParserException(`Failed to parse. Text: "${text}". Error: ${e}`, text);
+        }
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/router/multi_prompt.js
+
+
+
+
+
+
+
+
+
+
+class MultiPromptChain extends (/* unused pure expression or super */ null && (MultiRouteChain)) {
+    static fromPrompts(llm, promptNames, promptDescriptions, promptTemplates, defaultChain, options) {
+        const destinations = zipEntries(promptNames, promptDescriptions).map(([name, desc]) => `${name}: ${desc}`);
+        const structuredOutputParserSchema = z.object({
+            destination: z
+                .string()
+                .optional()
+                .describe('name of the question answering system to use or "DEFAULT"'),
+            next_inputs: z
+                .object({
+                input: z
+                    .string()
+                    .describe("a potentially modified version of the original input"),
+            })
+                .describe("input to be fed to the next model"),
+        });
+        const outputParser = new RouterOutputParser(structuredOutputParserSchema);
+        const destinationsStr = destinations.join("\n");
+        const routerTemplate = interpolateFString(STRUCTURED_MULTI_PROMPT_ROUTER_TEMPLATE(outputParser.getFormatInstructions({ interpolationDepth: 4 })), {
+            destinations: destinationsStr,
+        });
+        const routerPrompt = new PromptTemplate({
+            template: routerTemplate,
+            inputVariables: ["input"],
+            outputParser,
+        });
+        const routerChain = LLMRouterChain.fromLLM(llm, routerPrompt);
+        const destinationChains = zipEntries(promptNames, promptTemplates).reduce((acc, [name, template]) => {
+            let myPrompt;
+            if (typeof template === "object") {
+                myPrompt = template;
+            }
+            else if (typeof template === "string") {
+                myPrompt = new PromptTemplate({
+                    template: template,
+                    inputVariables: ["input"],
+                });
+            }
+            else {
+                throw new Error("Invalid prompt template");
+            }
+            acc[name] = new LLMChain({
+                llm,
+                prompt: myPrompt,
+            });
+            return acc;
+        }, {});
+        const convChain = new ConversationChain({
+            llm,
+            outputKey: "text",
+        });
+        return new MultiPromptChain({
+            routerChain,
+            destinationChains,
+            defaultChain: defaultChain ?? convChain,
+            ...options,
+        });
+    }
+    _chainType() {
+        return "multi_prompt_chain";
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/router/multi_retrieval_qa.js
+
+
+
+
+
+
+
+
+
+
+class MultiRetrievalQAChain extends (/* unused pure expression or super */ null && (MultiRouteChain)) {
+    get outputKeys() {
+        return ["result"];
+    }
+    static fromRetrievers(llm, retrieverNames, retrieverDescriptions, retrievers, retrieverPrompts, defaults, options) {
+        const { defaultRetriever, defaultPrompt, defaultChain } = defaults ?? {};
+        if (defaultPrompt && !defaultRetriever) {
+            throw new Error("`default_retriever` must be specified if `default_prompt` is \nprovided. Received only `default_prompt`.");
+        }
+        const destinations = zipEntries(retrieverNames, retrieverDescriptions).map(([name, desc]) => `${name}: ${desc}`);
+        const structuredOutputParserSchema = z.object({
+            destination: z
+                .string()
+                .optional()
+                .describe('name of the question answering system to use or "DEFAULT"'),
+            next_inputs: z
+                .object({
+                query: z
+                    .string()
+                    .describe("a potentially modified version of the original input"),
+            })
+                .describe("input to be fed to the next model"),
+        });
+        const outputParser = new RouterOutputParser(structuredOutputParserSchema);
+        const destinationsStr = destinations.join("\n");
+        const routerTemplate = interpolateFString(STRUCTURED_MULTI_RETRIEVAL_ROUTER_TEMPLATE(outputParser.getFormatInstructions({ interpolationDepth: 4 })), {
+            destinations: destinationsStr,
+        });
+        const routerPrompt = new PromptTemplate({
+            template: routerTemplate,
+            inputVariables: ["input"],
+            outputParser,
+        });
+        const routerChain = LLMRouterChain.fromLLM(llm, routerPrompt);
+        const prompts = retrieverPrompts ?? retrievers.map(() => null);
+        const destinationChains = zipEntries(retrieverNames, retrievers, prompts).reduce((acc, [name, retriever, prompt]) => {
+            let opt;
+            if (prompt) {
+                opt = { prompt };
+            }
+            acc[name] = RetrievalQAChain.fromLLM(llm, retriever, opt);
+            return acc;
+        }, {});
+        let _defaultChain;
+        if (defaultChain) {
+            _defaultChain = defaultChain;
+        }
+        else if (defaultRetriever) {
+            _defaultChain = RetrievalQAChain.fromLLM(llm, defaultRetriever, {
+                prompt: defaultPrompt,
+            });
+        }
+        else {
+            const promptTemplate = DEFAULT_TEMPLATE.replace("input", "query");
+            const prompt = new PromptTemplate({
+                template: promptTemplate,
+                inputVariables: ["history", "query"],
+            });
+            _defaultChain = new ConversationChain({
+                llm,
+                prompt,
+                outputKey: "result",
+            });
+        }
+        return new MultiRetrievalQAChain({
+            routerChain,
+            destinationChains,
+            defaultChain: _defaultChain,
+            ...options,
+        });
+    }
+    _chainType() {
+        return "multi_retrieval_qa_chain";
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/index.js
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;// CONCATENATED MODULE: ./node_modules/langchain/chains.js
+
+;// CONCATENATED MODULE: ./src/helpers.ts
+
+
+
+
+
+
+const octokitTag = Context/* GenericTag */.hV('octokit');
+const PullRequest = Context/* GenericTag */.hV('PullRequest');
 class PullRequestClass {
     getFilesForReview = (owner, repo, pullNumber, excludeFilePatterns) => {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step11: Fetching files for review."); // Debug statement
-        const program = octokitTag.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(octokit => effect__WEBPACK_IMPORTED_MODULE_7__/* .retry */ .XDD(effect__WEBPACK_IMPORTED_MODULE_7__/* .tryPromise */ .p6W(() => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step11.1: Sending request to list files for pull request #${pullNumber}.`); // Debug statement
-            return octokit.rest.pulls.listFiles({ owner, repo, pull_number: pullNumber, per_page: 100 });
-        }), exponentialBackoffWithJitter(3))), effect__WEBPACK_IMPORTED_MODULE_7__/* .tap */ .bwX(pullRequestFiles => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step11.2: Received ${pullRequestFiles.data.length} files for review.`); // Debug statement
-        })), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(pullRequestFiles => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step11.3: Filtering files based on exclude patterns."); // Debug statement
-            return pullRequestFiles.data.filter(file => {
-                return (excludeFilePatterns.every(pattern => !(0,minimatch__WEBPACK_IMPORTED_MODULE_0__/* .minimatch */ .s7)(file.filename, pattern, { matchBase: true })) &&
-                    (file.status === 'modified' || file.status === 'added' || file.status === 'changed'));
-            });
-        })), effect__WEBPACK_IMPORTED_MODULE_7__/* .tap */ .bwX(filteredFiles => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step11.4: Filtered files count: ${filteredFiles.length}.`); // Debug statement
-        })));
+        const program = octokitTag.pipe(esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.listFiles({ owner, repo, pull_number: pullNumber, per_page: 100 })), exponentialBackoffWithJitter(3))), esm_Effect/* tap */.bwX(pullRequestFiles => esm_Effect/* sync */.Z_X(() => core.info(`Original files for review ${pullRequestFiles.data.length}: ${pullRequestFiles.data.map(_ => _.filename)}`))), esm_Effect/* flatMap */.VSD(pullRequestFiles => esm_Effect/* sync */.Z_X(() => pullRequestFiles.data.filter(file => {
+            return (excludeFilePatterns.every(pattern => !minimatch(file.filename, pattern, { matchBase: true })) &&
+                (file.status === 'modified' || file.status === 'added' || file.status === 'changed'));
+        }))), esm_Effect/* tap */.bwX(filteredFiles => esm_Effect/* sync */.Z_X(() => core.info(`Filtered files for review ${filteredFiles.length}: ${filteredFiles.map(_ => _.filename)}`))));
         return program;
     };
-    createReviewComment = (requestOptions) => octokitTag.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .tap */ .bwX(_ => {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step10: Preparing to create review comment."); // Debug statement
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step10.1: Request options: ${JSON.stringify(requestOptions)}`); // Debug statement
-    }), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(octokit => effect__WEBPACK_IMPORTED_MODULE_7__/* .retry */ .XDD(effect__WEBPACK_IMPORTED_MODULE_7__/* .tryPromise */ .p6W(() => {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step10.2: Sending request to create review comment."); // Debug statement
-        return octokit.rest.pulls.createReviewComment(requestOptions);
-    }), exponentialBackoffWithJitter(3))));
-    createReview = (requestOptions) => octokitTag.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(octokit => effect__WEBPACK_IMPORTED_MODULE_7__/* .retry */ .XDD(effect__WEBPACK_IMPORTED_MODULE_7__/* .tryPromise */ .p6W(() => octokit.rest.pulls.createReview(requestOptions)), exponentialBackoffWithJitter(3))));
+    createReviewComment = (requestOptions) => octokitTag.pipe(esm_Effect/* tap */.bwX(_ => core.debug(`Creating review comment: ${JSON.stringify(requestOptions)}`)), esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReviewComment(requestOptions)), exponentialBackoffWithJitter(3))));
+    createReview = (requestOptions) => octokitTag.pipe(esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReview(requestOptions)), exponentialBackoffWithJitter(3))));
 }
-const LanguageDetection = effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => {
+const LanguageDetection = esm_Effect/* sync */.Z_X(() => {
     return {
         detectLanguage: (filename) => {
             const extension = getFileExtension(filename);
-            return effect__WEBPACK_IMPORTED_MODULE_8__/* .fromNullable */ .ij(_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .extensionToLanguageMap */ .G0[extension]);
+            return Option/* fromNullable */.ij(extensionToLanguageMap[extension]);
         }
     };
 });
-class DetectLanguage extends effect__WEBPACK_IMPORTED_MODULE_6__/* .Tag */ .Vp('DetectLanguage')() {
-    static Live = effect__WEBPACK_IMPORTED_MODULE_9__/* .effect */ .cE(this, LanguageDetection);
+class DetectLanguage extends Context/* Tag */.Vp('DetectLanguage')() {
+    static Live = Layer/* effect */.cE(this, LanguageDetection);
 }
 const getFileExtension = (filename) => {
     const extension = filename.split('.').pop();
     return extension ? extension : '';
 };
-const CodeReview = effect__WEBPACK_IMPORTED_MODULE_6__/* .GenericTag */ .hV('CodeReview');
+const CodeReview = Context/* GenericTag */.hV('CodeReview');
 class CodeReviewClass {
     llm;
-    chatPrompt;
+    chatPrompt = prompts/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages([
+        prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(systemPrompt),
+        prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(instructionsPrompt)
+    ]);
     chain;
     constructor(llm) {
         this.llm = llm;
-        this.chatPrompt = langchain_prompts__WEBPACK_IMPORTED_MODULE_3__/* .ChatPromptTemplate.fromPromptMessages */ .ks.fromPromptMessages([
-            langchain_prompts__WEBPACK_IMPORTED_MODULE_3__/* .SystemMessagePromptTemplate.fromTemplate */ .ov.fromTemplate(_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .systemPrompt */ .UT),
-            langchain_prompts__WEBPACK_IMPORTED_MODULE_3__/* .HumanMessagePromptTemplate.fromTemplate */ .kq.fromTemplate(_main_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPrompt */ .x)
-        ]);
-        this.chain = new langchain_chains__WEBPACK_IMPORTED_MODULE_4__/* .LLMChain */ .Un({
+        this.chain = new llm_chain.LLMChain({
             prompt: this.chatPrompt,
             llm: this.llm
         });
     }
-    codeReviewFor = (file) => DetectLanguage.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(DetectLanguage => DetectLanguage.detectLanguage(file.filename)), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(lang => effect__WEBPACK_IMPORTED_MODULE_7__/* .retry */ .XDD(effect__WEBPACK_IMPORTED_MODULE_7__/* .tryPromise */ .p6W(() => this.chain.call({ lang, diff: file.patch })), exponentialBackoffWithJitter(3))));
+    codeReviewFor = (file) => DetectLanguage.pipe(esm_Effect/* flatMap */.VSD(DetectLanguage => DetectLanguage.detectLanguage(file.filename)), esm_Effect/* flatMap */.VSD(lang => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => this.chain.call({ lang, diff: file.patch })), exponentialBackoffWithJitter(3))));
 }
-const exponentialBackoffWithJitter = (retries = 3) => effect__WEBPACK_IMPORTED_MODULE_10__/* .recurs */ .jJ(retries).pipe(effect__WEBPACK_IMPORTED_MODULE_10__/* .compose */ .qC(effect__WEBPACK_IMPORTED_MODULE_10__/* .exponential */ .J9(1000, 2)), effect__WEBPACK_IMPORTED_MODULE_10__/* .jittered */ .Ek);
+const exponentialBackoffWithJitter = (retries = 3) => recurs(retries).pipe(compose(exponential(1000, 2)), jittered);
 const RETRIES = 3;
 const retryWithBackoff = (effect) => Effect.retry(effect, exponentialBackoffWithJitter(RETRIES));
 
-__webpack_async_result__();
-} catch(e) { __webpack_async_result__(e); } });
 
 /***/ }),
 
@@ -44270,8 +49735,7 @@ __webpack_async_result__();
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "K": () => (/* binding */ run),
-/* harmony export */   "x": () => (/* binding */ instructionsPrompt)
+/* harmony export */   "K": () => (/* binding */ run)
 /* harmony export */ });
 /* harmony import */ var dotenv__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2437);
 /* harmony import */ var dotenv__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(dotenv__WEBPACK_IMPORTED_MODULE_0__);
@@ -44280,16 +49744,12 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var langchain_chat_models__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9435);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(9374);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(6795);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(2732);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(6798);
-/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_10__ = __nccwpck_require__(8933);
-/* harmony import */ var _helpers_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3015);
-/* harmony import */ var _constants_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(9042);
-var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_helpers_js__WEBPACK_IMPORTED_MODULE_4__]);
-_helpers_js__WEBPACK_IMPORTED_MODULE_4__ = (__webpack_async_dependencies__.then ? (await __webpack_async_dependencies__)() : __webpack_async_dependencies__)[0];
-
+/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(9374);
+/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(6795);
+/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(2732);
+/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(6798);
+/* harmony import */ var effect__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(8933);
+/* harmony import */ var _helpers_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4237);
 
 
 
@@ -44298,107 +49758,65 @@ _helpers_js__WEBPACK_IMPORTED_MODULE_4__ = (__webpack_async_dependencies__.then 
 
 (0,dotenv__WEBPACK_IMPORTED_MODULE_0__.config)();
 let isBlockExecuted = false; // Flag to ensure the block runs only once
-let instructionsPrompt;
 const run = async () => {
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step1: Starting the run function"); // Debug statement
-    if (isBlockExecuted) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step1.1: Block already executed, exiting."); // Debug statement
-        return;
-    }
-    isBlockExecuted = true;
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step1.2: Block execution flag set to true."); // Debug statement
+    if (isBlockExecuted)
+        return; // Exit if the block has already been executed
+    isBlockExecuted = true; // Set the flag to true
     const openAIApiKey = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('openai_api_key');
     const githubToken = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('github_token');
     const modelName = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('model_name');
     const temperature = parseInt(_actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('model_temperature'));
-    const instructionsFilePath = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('instructions_file_path');
-    if (!githubToken) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed('Step2: GitHub token is missing. Exiting.'); // Debug statement
-        return;
-    }
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step3: Initializing GitHub context and octokit."); // Debug statement
+    //   const azureOpenAIApiKey = core.getInput('azure_openai_api_key')
+    //   const azureOpenAIApiInstanceName = core.getInput('azure_openai_api_instance_name')
+    //   const azureOpenAIApiDeploymentName = core.getInput('azure_openai_api_deployment_name')
+    //   const azureOpenAIApiVersion = core.getInput('azure_openai_api_version')
     const context = _actions_github__WEBPACK_IMPORTED_MODULE_2__.context;
     const { owner, repo } = context.repo;
-    const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken);
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step4: Fetching instructions prompt."); // Debug statement
-    const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
-    instructionsPrompt = _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk + instructionsPromptMid + _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r;
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step5: Initializing the model and layers."); // Debug statement
     const model = new langchain_chat_models__WEBPACK_IMPORTED_MODULE_3__/* .ChatOpenAI */ .z7({
         temperature,
         openAIApiKey,
         modelName,
+        // azureOpenAIApiKey,
+        // azureOpenAIApiInstanceName,
+        // azureOpenAIApiDeploymentName,
+        // azureOpenAIApiVersion
     });
     const MainLive = init(model, githubToken);
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step6: Matching event name."); // Debug statement
-    const program = effect__WEBPACK_IMPORTED_MODULE_6__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_6__/* .when */ .gx('pull_request', () => {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step6.1: Handling pull_request event."); // Debug statement
-        const excludeFilePatterns = (0,effect__WEBPACK_IMPORTED_MODULE_7__/* .pipe */ .zG)(effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => _actions_github__WEBPACK_IMPORTED_MODULE_2__.context.payload), effect__WEBPACK_IMPORTED_MODULE_8__/* .tap */ .bwX(pullRequestPayload => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step6.2: repoName: ${repo}, pull_number: ${context.payload.number}, owner: ${owner}, sha: ${pullRequestPayload.pull_request.head.sha}`);
-        })), effect__WEBPACK_IMPORTED_MODULE_8__/* .map */ .UID(() => _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('exclude_files')
+    const program = effect__WEBPACK_IMPORTED_MODULE_5__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_5__/* .when */ .gx('pull_request', () => {
+        const excludeFilePatterns = (0,effect__WEBPACK_IMPORTED_MODULE_6__/* .pipe */ .zG)(effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => _actions_github__WEBPACK_IMPORTED_MODULE_2__.context.payload), effect__WEBPACK_IMPORTED_MODULE_7__/* .tap */ .bwX(pullRequestPayload => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => {
+            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`repoName: ${repo} pull_number: ${context.payload.number} owner: ${owner} sha: ${pullRequestPayload.pull_request.head.sha}`);
+        })), effect__WEBPACK_IMPORTED_MODULE_7__/* .map */ .UID(() => _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('exclude_files')
             .split(',')
             .map(_ => _.trim())));
-        const a = excludeFilePatterns.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(filePatterns => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(PullRequest => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step6.3: Fetching files for review."); // Debug statement
-            return PullRequest.getFilesForReview(owner, repo, context.payload.number, filePatterns);
-        }), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(files => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step6.4: Filtering files with patches. Total files: ${files.length}`); // Debug statement
-            return effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => files.filter(file => file.patch !== undefined));
-        }), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_8__/* .forEach */ .Ed_(files, file => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step6.5: Processing file: ${file.filename}`); // Debug statement
-            return _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.pipe */ .OD.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(CodeReview => CodeReview.codeReviewFor(file)), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(res => {
-                _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`Step6.6: Creating review comment for file: ${file.filename}`); // Debug statement
-                return _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(PullRequest => PullRequest.createReviewComment({
-                    repo,
-                    owner,
-                    pull_number: context.payload.number,
-                    commit_id: context.payload.pull_request?.head.sha,
-                    path: file.filename,
-                    body: res.text,
-                    subject_type: 'file'
-                })));
-            }));
-        })))));
+        const a = excludeFilePatterns.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(filePattens => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(PullRequest => PullRequest.getFilesForReview(owner, repo, context.payload.number, filePattens)), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => files.filter(file => file.patch !== undefined))), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_7__/* .forEach */ .Ed_(files, file => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.pipe */ .OD.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(CodeReview => CodeReview.codeReviewFor(file)), effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(res => {
+            // // Ensure res is an array
+            // const comments = Array.isArray(res) ? res : [res];
+            return _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_7__/* .flatMap */ .VSD(PullRequest => PullRequest.createReviewComment({
+                repo,
+                owner,
+                pull_number: context.payload.number,
+                commit_id: context.payload.pull_request?.head.sha,
+                path: file.filename,
+                body: res.text, //comments.map((r: any) => r.text).join('\n'), // Consolidate comments//res.text,
+                subject_type: 'file'
+            })));
+        })))) //
+        )));
         return a;
-    }), effect__WEBPACK_IMPORTED_MODULE_6__/* .orElse */ .vx(eventName => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`Step7: Unsupported event. Got: ${eventName}`); // Debug statement
+    }), effect__WEBPACK_IMPORTED_MODULE_5__/* .orElse */ .vx(eventName => effect__WEBPACK_IMPORTED_MODULE_7__/* .sync */ .Z_X(() => {
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`This action only works on pull_request events. Got: ${eventName}`);
     })));
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step8: Running the program."); // Debug statement
-    const runnable = effect__WEBPACK_IMPORTED_MODULE_8__/* .provide */ .JJ_(program, MainLive);
-    const result = await effect__WEBPACK_IMPORTED_MODULE_8__/* .runPromiseExit */ .r9F(runnable);
-    if (effect__WEBPACK_IMPORTED_MODULE_9__/* .isFailure */ .hx(result)) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`Step9: Program failed with error: ${result.cause.toString()}`); // Debug statement
-    }
-    else {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.info("Step9: Program completed successfully."); // Debug statement
-    }
-};
-// Function to fetch instructionsPrompt from a GitHub file
-const fetchInstructionsPrompt = async (octokit, owner, repo, filePath) => {
-    const response = await octokit.rest.repos.getContent({
-        owner,
-        repo,
-        path: filePath,
-    });
-    // Log the response structure for debugging
-    //core.info(`Response data: ${JSON.stringify(response.data)}`);
-    //core.info(`${filePath}`);
-    if (response.data && 'content' in response.data) {
-        const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
-        //core.info(`Fetched instructionsPrompt from ${filePath}:`);
-        //core.info(content); // Log the actual content
-        return content;
-    }
-    else {
-        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`Unable to fetch content from ${filePath}. Response data: ${JSON.stringify(response.data)}`);
-        return '';
+    const runnable = effect__WEBPACK_IMPORTED_MODULE_7__/* .provide */ .JJ_(program, MainLive);
+    const result = await effect__WEBPACK_IMPORTED_MODULE_7__/* .runPromiseExit */ .r9F(runnable);
+    if (effect__WEBPACK_IMPORTED_MODULE_8__/* .isFailure */ .hx(result)) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(result.cause.toString());
     }
 };
 const init = (model, githubToken) => {
-    const CodeReviewLive = effect__WEBPACK_IMPORTED_MODULE_10__/* .effect */ .cE(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview */ .OD, effect__WEBPACK_IMPORTED_MODULE_8__/* .map */ .UID(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage */ .oh, _ => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.of */ .OD.of(new _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReviewClass */ .Pr(model))));
-    const octokitLive = effect__WEBPACK_IMPORTED_MODULE_10__/* .succeed */ .ng(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .octokitTag */ .sK, _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken));
-    const PullRequestLive = effect__WEBPACK_IMPORTED_MODULE_10__/* .effect */ .cE(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest */ .i7, effect__WEBPACK_IMPORTED_MODULE_8__/* .map */ .UID(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .octokitTag */ .sK, _ => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.of */ .i7.of(new _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequestClass */ .TC())));
-    const mainLive = CodeReviewLive.pipe(effect__WEBPACK_IMPORTED_MODULE_10__/* .merge */ .TS(PullRequestLive), effect__WEBPACK_IMPORTED_MODULE_10__/* .merge */ .TS(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage.Live */ .oh.Live), effect__WEBPACK_IMPORTED_MODULE_10__/* .merge */ .TS(octokitLive), effect__WEBPACK_IMPORTED_MODULE_10__/* .provide */ .JJ(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage.Live */ .oh.Live), effect__WEBPACK_IMPORTED_MODULE_10__/* .provide */ .JJ(octokitLive));
+    const CodeReviewLive = effect__WEBPACK_IMPORTED_MODULE_9__/* .effect */ .cE(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview */ .OD, effect__WEBPACK_IMPORTED_MODULE_7__/* .map */ .UID(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage */ .oh, _ => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.of */ .OD.of(new _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReviewClass */ .Pr(model))));
+    const octokitLive = effect__WEBPACK_IMPORTED_MODULE_9__/* .succeed */ .ng(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .octokitTag */ .sK, _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken));
+    const PullRequestLive = effect__WEBPACK_IMPORTED_MODULE_9__/* .effect */ .cE(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest */ .i7, effect__WEBPACK_IMPORTED_MODULE_7__/* .map */ .UID(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .octokitTag */ .sK, _ => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.of */ .i7.of(new _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequestClass */ .TC())));
+    const mainLive = CodeReviewLive.pipe(effect__WEBPACK_IMPORTED_MODULE_9__/* .merge */ .TS(PullRequestLive), effect__WEBPACK_IMPORTED_MODULE_9__/* .merge */ .TS(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage.Live */ .oh.Live), effect__WEBPACK_IMPORTED_MODULE_9__/* .merge */ .TS(octokitLive), effect__WEBPACK_IMPORTED_MODULE_9__/* .provide */ .JJ(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage.Live */ .oh.Live), effect__WEBPACK_IMPORTED_MODULE_9__/* .provide */ .JJ(octokitLive));
     return mainLive;
 };
 await run();
@@ -65515,838 +70933,6 @@ const disabledSet = _internal_runtimeFlags_js__WEBPACK_IMPORTED_MODULE_1__/* .di
  */
 const render = _internal_runtimeFlags_js__WEBPACK_IMPORTED_MODULE_1__/* .renderPatch */ .yI;
 //# sourceMappingURL=RuntimeFlagsPatch.js.map
-
-/***/ }),
-
-/***/ 5469:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "Ek": () => (/* binding */ jittered),
-/* harmony export */   "J9": () => (/* binding */ exponential),
-/* harmony export */   "jJ": () => (/* binding */ recurs),
-/* harmony export */   "qC": () => (/* binding */ compose)
-/* harmony export */ });
-/* unused harmony exports ScheduleTypeId, ScheduleDriverTypeId, makeWithState, addDelay, addDelayEffect, andThen, andThenEither, as, asVoid, bothInOut, check, checkEffect, collectAllInputs, collectAllOutputs, collectUntil, collectUntilEffect, collectWhile, collectWhileEffect, mapInput, mapInputContext, mapInputEffect, count, cron, dayOfMonth, dayOfWeek, delayed, delayedEffect, delayedSchedule, delays, mapBoth, mapBothEffect, driver, duration, either, eitherWith, elapsed, ensuring, fibonacci, fixed, forever, fromDelay, fromDelays, fromFunction, hourOfDay, identity, intersect, intersectWith, jitteredWith, linear, map, mapEffect, minuteOfHour, modifyDelay, modifyDelayEffect, onDecision, once, passthrough, provideContext, provideService, recurUntil, recurUntilEffect, recurUntilOption, recurUpTo, recurWhile, recurWhileEffect, reduce, reduceEffect, repeatForever, repetitions, resetAfter, resetWhen, run, secondOfMinute, spaced, stop, succeed, sync, tapInput, tapOutput, unfold, union, unionWith, untilInput, untilInputEffect, untilOutput, untilOutputEffect, upTo, whileInput, whileInputEffect, whileOutput, whileOutputEffect, windowed, zipLeft, zipRight, zipWith */
-/* harmony import */ var _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7718);
-
-/**
- * @since 2.0.0
- * @category symbols
- */
-const ScheduleTypeId = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .ScheduleTypeId */ .qY;
-/**
- * @since 2.0.0
- * @category symbols
- */
-const ScheduleDriverTypeId = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .ScheduleDriverTypeId */ .Yh;
-/**
- * Constructs a new `Schedule` with the specified `initial` state and the
- * specified `step` function.
- *
- * @since 2.0.0
- * @category constructors
- */
-const makeWithState = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .makeWithState */ .mw;
-/**
- * Returns a new schedule with the given delay added to every interval defined
- * by this schedule.
- *
- * @since 2.0.0
- * @category utils
- */
-const addDelay = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .addDelay */ .wL;
-/**
- * Returns a new schedule with the given effectfully computed delay added to
- * every interval defined by this schedule.
- *
- * @since 2.0.0
- * @category utils
- */
-const addDelayEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .addDelayEffect */ .cH;
-/**
- * The same as `andThenEither`, but merges the output.
- *
- * @since 2.0.0
- * @category sequencing
- */
-const andThen = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .andThen */ .Po;
-/**
- * Returns a new schedule that first executes this schedule to completion, and
- * then executes the specified schedule to completion.
- *
- * @since 2.0.0
- * @category sequencing
- */
-const andThenEither = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .andThenEither */ .LZ;
-/**
- * Returns a new schedule that maps this schedule to a constant output.
- *
- * @since 2.0.0
- * @category mapping
- */
-const as = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__.as;
-/**
- * Returns a new schedule that maps the output of this schedule to unit.
- *
- * @since 2.0.0
- * @category constructors
- */
-const asVoid = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .asVoid */ .a2;
-/**
- * Returns a new schedule that has both the inputs and outputs of this and the
- * specified schedule.
- *
- * @since 2.0.0
- * @category utils
- */
-const bothInOut = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .bothInOut */ .E;
-/**
- * Returns a new schedule that passes each input and output of this schedule
- * to the specified function, and then determines whether or not to continue
- * based on the return value of the function.
- *
- * @since 2.0.0
- * @category utils
- */
-const check = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .check */ .BF;
-/**
- * Returns a new schedule that passes each input and output of this schedule
- * to the specified function, and then determines whether or not to continue
- * based on the return value of the function.
- *
- * @since 2.0.0
- * @category utils
- */
-const checkEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .checkEffect */ .vl;
-/**
- * A schedule that recurs anywhere, collecting all inputs into a `Chunk`.
- *
- * @since 2.0.0
- * @category constructors
- */
-const collectAllInputs = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .collectAllInputs */ .G_;
-/**
- * Returns a new schedule that collects the outputs of this one into a chunk.
- *
- * @since 2.0.0
- * @category utils
- */
-const collectAllOutputs = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .collectAllOutputs */ .ED;
-/**
- * A schedule that recurs until the condition f fails, collecting all inputs
- * into a list.
- *
- * @since 2.0.0
- * @category utils
- */
-const collectUntil = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .collectUntil */ .cX;
-/**
- * A schedule that recurs until the effectful condition f fails, collecting
- * all inputs into a list.
- *
- * @since 2.0.0
- * @category utils
- */
-const collectUntilEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .collectUntilEffect */ .ZN;
-/**
- * A schedule that recurs as long as the condition f holds, collecting all
- * inputs into a list.
- *
- * @since 2.0.0
- * @category utils
- */
-const collectWhile = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .collectWhile */ .gK;
-/**
- * A schedule that recurs as long as the effectful condition holds, collecting
- * all inputs into a list.
- *
- * @category utils
- * @since 2.0.0
- */
-const collectWhileEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .collectWhileEffect */ .DB;
-/**
- * Returns the composition of this schedule and the specified schedule, by
- * piping the output of this one into the input of the other. Effects
- * described by this schedule will always be executed before the effects
- * described by the second schedule.
- *
- * @since 2.0.0
- * @category utils
- */
-const compose = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .compose */ .qC;
-/**
- * Returns a new schedule that deals with a narrower class of inputs than this
- * schedule.
- *
- * @since 2.0.0
- * @category mapping
- */
-const mapInput = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .mapInput */ .$H;
-/**
- * Transforms the context being provided to this schedule with the
- * specified function.
- *
- * @since 2.0.0
- * @category context
- */
-const mapInputContext = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .mapInputContext */ .nP;
-/**
- * Returns a new schedule that deals with a narrower class of inputs than this
- * schedule.
- *
- * @since 2.0.0
- * @category mapping
- */
-const mapInputEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .mapInputEffect */ .wD;
-/**
- * A schedule that always recurs, which counts the number of recurrences.
- *
- * @since 2.0.0
- * @category constructors
- */
-const count = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .count */ .QX;
-/**
- * Cron schedule that recurs every `minute` that matches the schedule.
- *
- * It triggers at zero second of the minute. Producing the timestamps of the cron window.
- *
- * NOTE: `expression` parameter is validated lazily. Must be a valid cron expression.
- *
- * @since 2.0.0
- * @category constructors
- */
-const cron = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .cron */ .De;
-/**
- * Cron-like schedule that recurs every specified `day` of month. Won't recur
- * on months containing less days than specified in `day` param.
- *
- * It triggers at zero hour of the day. Producing a count of repeats: 0, 1, 2.
- *
- * NOTE: `day` parameter is validated lazily. Must be in range 1...31.
- *
- * @since 2.0.0
- * @category constructors
- */
-const dayOfMonth = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .dayOfMonth */ .KY;
-/**
- * Cron-like schedule that recurs every specified `day` of each week. It
- * triggers at zero hour of the week. Producing a count of repeats: 0, 1, 2.
- *
- * NOTE: `day` parameter is validated lazily. Must be in range 1 (Monday)...7
- * (Sunday).
- *
- * @since 2.0.0
- * @category constructors
- */
-const dayOfWeek = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .dayOfWeek */ .ds;
-/**
- * Returns a new schedule with the specified effectfully computed delay added
- * before the start of each interval produced by this schedule.
- *
- * @since 2.0.0
- * @category utils
- */
-const delayed = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .delayed */ .A8;
-/**
- * Returns a new schedule with the specified effectfully computed delay added
- * before the start of each interval produced by this schedule.
- *
- * @since 2.0.0
- * @category constructors
- */
-const delayedEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .delayedEffect */ .Ui;
-/**
- * Takes a schedule that produces a delay, and returns a new schedule that
- * uses this delay to further delay intervals in the resulting schedule.
- *
- * @since 2.0.0
- * @category constructors
- */
-const delayedSchedule = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .delayedSchedule */ .pN;
-/**
- * Returns a new schedule that outputs the delay between each occurence.
- *
- * @since 2.0.0
- * @category constructors
- */
-const delays = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .delays */ .ih;
-/**
- * Returns a new schedule that maps both the input and output.
- *
- * @since 2.0.0
- * @category mapping
- */
-const mapBoth = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .mapBoth */ .SA;
-/**
- * Returns a new schedule that maps both the input and output.
- *
- * @since 2.0.0
- * @category mapping
- */
-const mapBothEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .mapBothEffect */ .lK;
-/**
- * Returns a driver that can be used to step the schedule, appropriately
- * handling sleeping.
- *
- * @since 2.0.0
- * @category getter
- */
-const driver = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .driver */ .vC;
-/**
- * A schedule that can recur one time, the specified amount of time into the
- * future.
- *
- * @since 2.0.0
- * @category constructors
- */
-const duration = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .duration */ .x9;
-/**
- * Returns a new schedule that performs a geometric union on the intervals
- * defined by both schedules.
- *
- * @since 2.0.0
- * @category alternatives
- */
-const either = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .either */ .wE;
-/**
- * The same as `either` followed by `map`.
- *
- * @since 2.0.0
- * @category alternatives
- */
-const eitherWith = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .eitherWith */ .EA;
-/**
- * A schedule that occurs everywhere, which returns the total elapsed duration
- * since the first step.
- *
- * @since 2.0.0
- * @category constructors
- */
-const elapsed = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .elapsed */ ._J;
-/**
- * Returns a new schedule that will run the specified finalizer as soon as the
- * schedule is complete. Note that unlike `Effect.ensuring`, this method does not
- * guarantee the finalizer will be run. The `Schedule` may not initialize or
- * the driver of the schedule may not run to completion. However, if the
- * `Schedule` ever decides not to continue, then the finalizer will be run.
- *
- * @since 2.0.0
- * @category finalization
- */
-const ensuring = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .ensuring */ .IH;
-/**
- * A schedule that always recurs, but will wait a certain amount between
- * repetitions, given by `base * factor.pow(n)`, where `n` is the number of
- * repetitions so far. Returns the current duration between recurrences.
- *
- * @since 2.0.0
- * @category constructors
- */
-const exponential = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .exponential */ .J9;
-/**
- * A schedule that always recurs, increasing delays by summing the preceding
- * two delays (similar to the fibonacci sequence). Returns the current
- * duration between recurrences.
- *
- * @since 2.0.0
- * @category constructors
- */
-const fibonacci = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .fibonacci */ .pq;
-/**
- * A schedule that recurs on a fixed interval. Returns the number of
- * repetitions of the schedule so far.
- *
- * If the action run between updates takes longer than the interval, then the
- * action will be run immediately, but re-runs will not "pile up".
- *
- * ```
- * |-----interval-----|-----interval-----|-----interval-----|
- * |---------action--------||action|-----|action|-----------|
- * ```
- *
- * @since 2.0.0
- * @category constructors
- */
-const fixed = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .fixed */ .Bd;
-/**
- * A schedule that always recurs, producing a count of repeats: 0, 1, 2.
- *
- * @since 2.0.0
- * @category constructors
- */
-const forever = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .forever */ .Yo;
-/**
- * A schedule that recurs once with the specified delay.
- *
- * @since 2.0.0
- * @category constructors
- */
-const fromDelay = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .fromDelay */ .tS;
-/**
- * A schedule that recurs once for each of the specified durations, delaying
- * each time for the length of the specified duration. Returns the length of
- * the current duration between recurrences.
- *
- * @since 2.0.0
- * @category constructors
- */
-const fromDelays = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .fromDelays */ .iK;
-/**
- * A schedule that always recurs, mapping input values through the specified
- * function.
- *
- * @since 2.0.0
- * @category constructors
- */
-const fromFunction = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .fromFunction */ .iT;
-/**
- * Cron-like schedule that recurs every specified `hour` of each day. It
- * triggers at zero minute of the hour. Producing a count of repeats: 0, 1, 2.
- *
- * NOTE: `hour` parameter is validated lazily. Must be in range 0...23.
- *
- * @since 2.0.0
- * @category constructors
- */
-const hourOfDay = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .hourOfDay */ .lk;
-/**
- * A schedule that always recurs, which returns inputs as outputs.
- *
- * @since 2.0.0
- * @category constructors
- */
-const identity = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .identity */ .yR;
-/**
- * Returns a new schedule that performs a geometric intersection on the
- * intervals defined by both schedules.
- *
- * @since 2.0.0
- * @category utils
- */
-const intersect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .intersect */ .wf;
-/**
- * Returns a new schedule that combines this schedule with the specified
- * schedule, continuing as long as both schedules want to continue and merging
- * the next intervals according to the specified merge function.
- *
- * @since 2.0.0
- * @category utils
- */
-const intersectWith = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .intersectWith */ .i7;
-/**
- * Returns a new schedule that randomly modifies the size of the intervals of
- * this schedule.
- *
- * Defaults `min` to `0.8` and `max` to `1.2`.
- *
- * The new interval size is between `min * old interval size` and `max * old
- * interval size`.
- *
- * @since 2.0.0
- * @category constructors
- */
-const jittered = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .jittered */ .Ek;
-/**
- * Returns a new schedule that randomly modifies the size of the intervals of
- * this schedule.
- *
- * The new interval size is between `min * old interval size` and `max * old
- * interval size`.
- *
- * @since 2.0.0
- * @category constructors
- */
-const jitteredWith = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .jitteredWith */ .a9;
-/**
- * A schedule that always recurs, but will repeat on a linear time interval,
- * given by `base * n` where `n` is the number of repetitions so far. Returns
- * the current duration between recurrences.
- *
- * @since 2.0.0
- * @category constructors
- */
-const linear = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .linear */ .GE;
-/**
- * Returns a new schedule that maps the output of this schedule through the
- * specified function.
- *
- * @since 2.0.0
- * @category mapping
- */
-const map = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .map */ .UI;
-/**
- * Returns a new schedule that maps the output of this schedule through the
- * specified effectful function.
- *
- * @since 2.0.0
- * @category mapping
- */
-const mapEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .mapEffect */ .J1;
-/**
- * Cron-like schedule that recurs every specified `minute` of each hour. It
- * triggers at zero second of the minute. Producing a count of repeats: 0, 1,
- * 2.
- *
- * NOTE: `minute` parameter is validated lazily. Must be in range 0...59.
- *
- * @since 2.0.0
- * @category constructors
- */
-const minuteOfHour = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .minuteOfHour */ .MY;
-/**
- * Returns a new schedule that modifies the delay using the specified
- * function.
- *
- * @since 2.0.0
- * @category utils
- */
-const modifyDelay = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .modifyDelay */ .vr;
-/**
- * Returns a new schedule that modifies the delay using the specified
- * effectual function.
- *
- * @since 2.0.0
- * @category utils
- */
-const modifyDelayEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .modifyDelayEffect */ .Ug;
-/**
- * Returns a new schedule that applies the current one but runs the specified
- * effect for every decision of this schedule. This can be used to create
- * schedules that log failures, decisions, or computed values.
- *
- * @since 2.0.0
- * @category utils
- */
-const onDecision = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .onDecision */ ._0;
-/**
- * A schedule that recurs one time.
- *
- * @since 2.0.0
- * @category constructors
- */
-const once = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .once */ .vO;
-/**
- * Returns a new schedule that passes through the inputs of this schedule.
- *
- * @since 2.0.0
- * @category utils
- */
-const passthrough = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .passthrough */ .B2;
-/**
- * Returns a new schedule with its context provided to it, so the
- * resulting schedule does not require any context.
- *
- * @since 2.0.0
- * @category context
- */
-const provideContext = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .provideContext */ .qN;
-/**
- * Returns a new schedule with the single service it requires provided to it.
- * If the schedule requires multiple services use `provideContext`
- * instead.
- *
- * @since 2.0.0
- * @category context
- */
-const provideService = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .provideService */ .aH;
-/**
- * A schedule that recurs for until the predicate evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const recurUntil = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .recurUntil */ .FD;
-/**
- * A schedule that recurs for until the predicate evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const recurUntilEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .recurUntilEffect */ .Fp;
-/**
- * A schedule that recurs for until the input value becomes applicable to
- * partial function and then map that value with given function.
- *
- * @since 2.0.0
- * @category utils
- */
-const recurUntilOption = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .recurUntilOption */ .Zo;
-/**
- * A schedule that recurs during the given duration.
- *
- * @since 2.0.0
- * @category utils
- */
-const recurUpTo = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .recurUpTo */ .DY;
-/**
- * A schedule that recurs for as long as the predicate evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const recurWhile = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .recurWhile */ .Yi;
-/**
- * A schedule that recurs for as long as the effectful predicate evaluates to
- * true.
- *
- * @since 2.0.0
- * @category utils
- */
-const recurWhileEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .recurWhileEffect */ .UQ;
-/**
- * A schedule spanning all time, which can be stepped only the specified
- * number of times before it terminates.
- *
- * @category constructors
- * @since 2.0.0
- */
-const recurs = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .recurs */ .jJ;
-/**
- * Returns a new schedule that folds over the outputs of this one.
- *
- * @since 2.0.0
- * @category folding
- */
-const reduce = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .reduce */ .u4;
-/**
- * Returns a new schedule that effectfully folds over the outputs of this one.
- *
- * @since 2.0.0
- * @category folding
- */
-const reduceEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .reduceEffect */ .rN;
-/**
- * Returns a new schedule that loops this one continuously, resetting the
- * state when this schedule is done.
- *
- * @since 2.0.0
- * @category constructors
- */
-const repeatForever = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .forever */ .Yo;
-/**
- * Returns a new schedule that outputs the number of repetitions of this one.
- *
- * @since 2.0.0
- * @category utils
- */
-const repetitions = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .repetitions */ .k4;
-/**
- * Return a new schedule that automatically resets the schedule to its initial
- * state after some time of inactivity defined by `duration`.
- *
- * @since 2.0.0
- * @category utils
- */
-const resetAfter = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .resetAfter */ .AM;
-/**
- * Resets the schedule when the specified predicate on the schedule output
- * evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const resetWhen = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .resetWhen */ .oA;
-/**
- * Runs a schedule using the provided inputs, and collects all outputs.
- *
- * @since 2.0.0
- * @category destructors
- */
-const run = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .run */ .KH;
-/**
- * Cron-like schedule that recurs every specified `second` of each minute. It
- * triggers at zero nanosecond of the second. Producing a count of repeats: 0,
- * 1, 2.
- *
- * NOTE: `second` parameter is validated lazily. Must be in range 0...59.
- *
- * @since 2.0.0
- * @category constructors
- */
-const secondOfMinute = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .secondOfMinute */ .Ox;
-/**
- * Returns a schedule that recurs continuously, each repetition spaced the
- * specified duration from the last run.
- *
- * @since 2.0.0
- * @category constructors
- */
-const spaced = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .spaced */ .Eb;
-/**
- * A schedule that does not recur, it just stops.
- *
- * @since 2.0.0
- * @category constructors
- */
-const stop = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .stop */ .sT;
-/**
- * Returns a schedule that repeats one time, producing the specified constant
- * value.
- *
- * @since 2.0.0
- * @category constructors
- */
-const succeed = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .succeed */ .ng;
-/**
- * Returns a schedule that repeats one time, producing the specified constant
- * value.
- *
- * @category constructors
- * @since 2.0.0
- */
-const sync = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .sync */ .Z_;
-/**
- * Returns a new schedule that effectfully processes every input to this
- * schedule.
- *
- * @since 2.0.0
- * @category sequencing
- */
-const tapInput = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .tapInput */ .PK;
-/**
- * Returns a new schedule that effectfully processes every output from this
- * schedule.
- *
- * @since 2.0.0
- * @category sequencing
- */
-const tapOutput = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .tapOutput */ .YF;
-/**
- * Unfolds a schedule that repeats one time from the specified state and
- * iterator.
- *
- * @since 2.0.0
- * @category constructors
- */
-const unfold = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .unfold */ .JJ;
-/**
- * Returns a new schedule that performs a geometric union on the intervals
- * defined by both schedules.
- *
- * @since 2.0.0
- * @category utils
- */
-const union = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .union */ .G0;
-/**
- * Returns a new schedule that combines this schedule with the specified
- * schedule, continuing as long as either schedule wants to continue and
- * merging the next intervals according to the specified merge function.
- *
- * @since 2.0.0
- * @category utils
- */
-const unionWith = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .unionWith */ .K8;
-/**
- * Returns a new schedule that continues until the specified predicate on the
- * input evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const untilInput = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .untilInput */ .US;
-/**
- * Returns a new schedule that continues until the specified effectful
- * predicate on the input evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const untilInputEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .untilInputEffect */ .zj;
-/**
- * Returns a new schedule that continues until the specified predicate on the
- * output evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const untilOutput = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .untilOutput */ .s_;
-/**
- * Returns a new schedule that continues until the specified effectful
- * predicate on the output evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const untilOutputEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .untilOutputEffect */ .xb;
-/**
- * A schedule that recurs during the given duration.
- *
- * @since 2.0.0
- * @category utils
- */
-const upTo = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .upTo */ .b_;
-/**
- * Returns a new schedule that continues for as long as the specified predicate
- * on the input evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const whileInput = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .whileInput */ .DA;
-/**
- * Returns a new schedule that continues for as long as the specified effectful
- * predicate on the input evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const whileInputEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .whileInputEffect */ .Kb;
-/**
- * Returns a new schedule that continues for as long the specified predicate
- * on the output evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const whileOutput = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .whileOutput */ .VZ;
-/**
- * Returns a new schedule that continues for as long the specified effectful
- * predicate on the output evaluates to true.
- *
- * @since 2.0.0
- * @category utils
- */
-const whileOutputEffect = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .whileOutputEffect */ .aV;
-/**
- * A schedule that divides the timeline to `interval`-long windows, and sleeps
- * until the nearest window boundary every time it recurs.
- *
- * For example, `windowed(Duration.seconds(10))` would produce a schedule as
- * follows:
- *
- * ```
- *      10s        10s        10s       10s
- * |----------|----------|----------|----------|
- * |action------|sleep---|act|-sleep|action----|
- * ```
- *
- * @since 2.0.0
- * @category constructors
- */
-const windowed = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .windowed */ .hb;
-/**
- * The same as `intersect` but ignores the right output.
- *
- * @since 2.0.0
- * @category zipping
- */
-const zipLeft = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .zipLeft */ .Ti;
-/**
- * The same as `intersect` but ignores the left output.
- *
- * @since 2.0.0
- * @category zipping
- */
-const zipRight = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .zipRight */ .qs;
-/**
- * Equivalent to `intersect` followed by `map`.
- *
- * @since 2.0.0
- * @category zipping
- */
-const zipWith = _internal_schedule_js__WEBPACK_IMPORTED_MODULE_0__/* .zipWith */ .yL;
-//# sourceMappingURL=Schedule.js.map
 
 /***/ }),
 
@@ -88597,2885 +93183,6 @@ const setCurrentVersion = version => {
 
 /***/ }),
 
-/***/ 232:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "Un": () => (/* reexport */ llm_chain.LLMChain)
-});
-
-// UNUSED EXPORTS: AnalyzeDocumentChain, BaseChain, ChatVectorDBQAChain, ConstitutionalChain, ConstitutionalPrinciple, ConversationChain, ConversationalRetrievalQAChain, LLMRouterChain, MapReduceDocumentsChain, MultiPromptChain, MultiRetrievalQAChain, MultiRouteChain, OpenAIModerationChain, PRINCIPLES, RefineDocumentsChain, RetrievalQAChain, RouterChain, SequentialChain, SimpleSequentialChain, SqlDatabaseChain, StuffDocumentsChain, VectorDBQAChain, loadQAChain, loadQAMapReduceChain, loadQARefineChain, loadQAStuffChain, loadSummarizationChain
-
-// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/base.js
-var base = __nccwpck_require__(3197);
-// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/llm_chain.js
-var llm_chain = __nccwpck_require__(6726);
-// EXTERNAL MODULE: ./node_modules/langchain/dist/prompts/prompt.js
-var prompts_prompt = __nccwpck_require__(3379);
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/conversation.js
-
-
-
-const conversation_DEFAULT_TEMPLATE = (/* unused pure expression or super */ null && (`The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
-
-Current conversation:
-{history}
-Human: {input}
-AI:`));
-class conversation_ConversationChain extends (/* unused pure expression or super */ null && (LLMChain)) {
-    constructor({ prompt, outputKey, memory, ...rest }) {
-        super({
-            prompt: prompt ??
-                new PromptTemplate({
-                    template: conversation_DEFAULT_TEMPLATE,
-                    inputVariables: ["history", "input"],
-                }),
-            outputKey: outputKey ?? "response",
-            memory: memory ?? new BufferMemory(),
-            ...rest,
-        });
-    }
-}
-
-// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/sequential_chain.js + 1 modules
-var sequential_chain = __nccwpck_require__(7210);
-// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/combine_docs_chain.js
-var combine_docs_chain = __nccwpck_require__(9184);
-// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/question_answering/load.js + 4 modules
-var load = __nccwpck_require__(9507);
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/chat_vector_db_chain.js
-
-
-
-
-const question_generator_template = (/* unused pure expression or super */ null && (`Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
-
-Chat History:
-{chat_history}
-Follow Up Input: {question}
-Standalone question:`));
-const qa_template = (/* unused pure expression or super */ null && (`Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
-
-{context}
-
-Question: {question}
-Helpful Answer:`));
-/** @deprecated use `ConversationalRetrievalQAChain` instead. */
-class ChatVectorDBQAChain extends (/* unused pure expression or super */ null && (BaseChain)) {
-    get inputKeys() {
-        return [this.inputKey, this.chatHistoryKey];
-    }
-    get outputKeys() {
-        return [this.outputKey];
-    }
-    constructor(fields) {
-        super(fields);
-        Object.defineProperty(this, "k", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 4
-        });
-        Object.defineProperty(this, "inputKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "question"
-        });
-        Object.defineProperty(this, "chatHistoryKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "chat_history"
-        });
-        Object.defineProperty(this, "outputKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "result"
-        });
-        Object.defineProperty(this, "vectorstore", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "combineDocumentsChain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "questionGeneratorChain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "returnSourceDocuments", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        this.vectorstore = fields.vectorstore;
-        this.combineDocumentsChain = fields.combineDocumentsChain;
-        this.questionGeneratorChain = fields.questionGeneratorChain;
-        this.inputKey = fields.inputKey ?? this.inputKey;
-        this.outputKey = fields.outputKey ?? this.outputKey;
-        this.k = fields.k ?? this.k;
-        this.returnSourceDocuments =
-            fields.returnSourceDocuments ?? this.returnSourceDocuments;
-    }
-    /** @ignore */
-    async _call(values, runManager) {
-        if (!(this.inputKey in values)) {
-            throw new Error(`Question key ${this.inputKey} not found.`);
-        }
-        if (!(this.chatHistoryKey in values)) {
-            throw new Error(`chat history key ${this.inputKey} not found.`);
-        }
-        const question = values[this.inputKey];
-        const chatHistory = values[this.chatHistoryKey];
-        let newQuestion = question;
-        if (chatHistory.length > 0) {
-            const result = await this.questionGeneratorChain.call({
-                question,
-                chat_history: chatHistory,
-            }, runManager?.getChild());
-            const keys = Object.keys(result);
-            console.log("_call", values, keys);
-            if (keys.length === 1) {
-                newQuestion = result[keys[0]];
-            }
-            else {
-                throw new Error("Return from llm chain has multiple values, only single values supported.");
-            }
-        }
-        const docs = await this.vectorstore.similaritySearch(newQuestion, this.k);
-        const inputs = {
-            question: newQuestion,
-            input_documents: docs,
-            chat_history: chatHistory,
-        };
-        const result = await this.combineDocumentsChain.call(inputs, runManager?.getChild());
-        if (this.returnSourceDocuments) {
-            return {
-                ...result,
-                sourceDocuments: docs,
-            };
-        }
-        return result;
-    }
-    _chainType() {
-        return "chat-vector-db";
-    }
-    static async deserialize(data, values) {
-        if (!("vectorstore" in values)) {
-            throw new Error(`Need to pass in a vectorstore to deserialize VectorDBQAChain`);
-        }
-        const { vectorstore } = values;
-        return new ChatVectorDBQAChain({
-            combineDocumentsChain: await BaseChain.deserialize(data.combine_documents_chain),
-            questionGeneratorChain: await LLMChain.deserialize(data.question_generator),
-            k: data.k,
-            vectorstore,
-        });
-    }
-    serialize() {
-        return {
-            _type: this._chainType(),
-            combine_documents_chain: this.combineDocumentsChain.serialize(),
-            question_generator: this.questionGeneratorChain.serialize(),
-            k: this.k,
-        };
-    }
-    static fromLLM(llm, vectorstore, options = {}) {
-        const { questionGeneratorTemplate, qaTemplate, verbose, ...rest } = options;
-        const question_generator_prompt = PromptTemplate.fromTemplate(questionGeneratorTemplate || question_generator_template);
-        const qa_prompt = PromptTemplate.fromTemplate(qaTemplate || qa_template);
-        const qaChain = loadQAStuffChain(llm, { prompt: qa_prompt, verbose });
-        const questionGeneratorChain = new LLMChain({
-            prompt: question_generator_prompt,
-            llm,
-            verbose,
-        });
-        const instance = new this({
-            vectorstore,
-            combineDocumentsChain: qaChain,
-            questionGeneratorChain,
-            ...rest,
-        });
-        return instance;
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/analyze_documents_chain.js
-
-
-/**
- * Chain that combines documents by stuffing into context.
- * @augments BaseChain
- * @augments StuffDocumentsChainInput
- */
-class AnalyzeDocumentChain extends (/* unused pure expression or super */ null && (BaseChain)) {
-    constructor(fields) {
-        super(fields);
-        Object.defineProperty(this, "inputKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "input_document"
-        });
-        Object.defineProperty(this, "combineDocumentsChain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "textSplitter", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        this.combineDocumentsChain = fields.combineDocumentsChain;
-        this.inputKey = fields.inputKey ?? this.inputKey;
-        this.textSplitter =
-            fields.textSplitter ?? new RecursiveCharacterTextSplitter();
-    }
-    get inputKeys() {
-        return [this.inputKey];
-    }
-    get outputKeys() {
-        return this.combineDocumentsChain.outputKeys;
-    }
-    /** @ignore */
-    async _call(values, runManager) {
-        if (!(this.inputKey in values)) {
-            throw new Error(`Document key ${this.inputKey} not found.`);
-        }
-        const { [this.inputKey]: doc, ...rest } = values;
-        const currentDoc = doc;
-        const currentDocs = await this.textSplitter.createDocuments([currentDoc]);
-        const newInputs = { input_documents: currentDocs, ...rest };
-        const result = await this.combineDocumentsChain.call(newInputs, runManager?.getChild());
-        return result;
-    }
-    _chainType() {
-        return "analyze_document_chain";
-    }
-    static async deserialize(data, values) {
-        if (!("text_splitter" in values)) {
-            throw new Error(`Need to pass in a text_splitter to deserialize AnalyzeDocumentChain.`);
-        }
-        const { text_splitter } = values;
-        if (!data.combine_document_chain) {
-            throw new Error(`Need to pass in a combine_document_chain to deserialize AnalyzeDocumentChain.`);
-        }
-        return new AnalyzeDocumentChain({
-            combineDocumentsChain: await BaseChain.deserialize(data.combine_document_chain),
-            textSplitter: text_splitter,
-        });
-    }
-    serialize() {
-        return {
-            _type: this._chainType(),
-            combine_document_chain: this.combineDocumentsChain.serialize(),
-        };
-    }
-}
-
-// EXTERNAL MODULE: ./node_modules/langchain/dist/chains/vector_db_qa.js
-var vector_db_qa = __nccwpck_require__(9518);
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/summarization/stuff_prompts.js
-/* eslint-disable spaced-comment */
-
-const template = `Write a concise summary of the following:
-
-
-"{text}"
-
-
-CONCISE SUMMARY:`;
-const stuff_prompts_DEFAULT_PROMPT = /*#__PURE__*/ new prompts_prompt.PromptTemplate({
-    template,
-    inputVariables: ["text"],
-});
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/summarization/refine_prompts.js
-
-const refinePromptTemplate = `Your job is to produce a final summary
-We have provided an existing summary up to a certain point: "{existing_answer}"
-We have the opportunity to refine the existing summary
-(only if needed) with some more context below.
-------------
-"{text}"
-------------
-
-Given the new context, refine the original summary
-If the context isn't useful, return the original summary.
-
-REFINED SUMMARY:`;
-const refine_prompts_REFINE_PROMPT = /* #__PURE__ */ new prompts_prompt.PromptTemplate({
-    template: refinePromptTemplate,
-    inputVariables: ["existing_answer", "text"],
-});
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/summarization/load.js
-
-
-
-
-const loadSummarizationChain = (llm, params = { type: "map_reduce" }) => {
-    const { verbose } = params;
-    if (params.type === "stuff") {
-        const { prompt = DEFAULT_PROMPT } = params;
-        const llmChain = new LLMChain({ prompt, llm, verbose });
-        const chain = new StuffDocumentsChain({
-            llmChain,
-            documentVariableName: "text",
-            verbose,
-        });
-        return chain;
-    }
-    if (params.type === "map_reduce") {
-        const { combineMapPrompt = DEFAULT_PROMPT, combinePrompt = DEFAULT_PROMPT, returnIntermediateSteps, } = params;
-        const llmChain = new LLMChain({ prompt: combineMapPrompt, llm, verbose });
-        const combineLLMChain = new LLMChain({
-            prompt: combinePrompt,
-            llm,
-            verbose,
-        });
-        const combineDocumentChain = new StuffDocumentsChain({
-            llmChain: combineLLMChain,
-            documentVariableName: "text",
-            verbose,
-        });
-        const chain = new MapReduceDocumentsChain({
-            llmChain,
-            combineDocumentChain,
-            documentVariableName: "text",
-            returnIntermediateSteps,
-            verbose,
-        });
-        return chain;
-    }
-    if (params.type === "refine") {
-        const { refinePrompt = REFINE_PROMPT, questionPrompt = DEFAULT_PROMPT } = params;
-        const llmChain = new LLMChain({ prompt: questionPrompt, llm, verbose });
-        const refineLLMChain = new LLMChain({ prompt: refinePrompt, llm, verbose });
-        const chain = new RefineDocumentsChain({
-            llmChain,
-            refineLLMChain,
-            documentVariableName: "text",
-            verbose,
-        });
-        return chain;
-    }
-    throw new Error(`Invalid _type: ${params.type}`);
-};
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/sql_db/sql_db_prompt.js
-/* eslint-disable spaced-comment */
-
-const sql_db_prompt_DEFAULT_SQL_DATABASE_PROMPT = /*#__PURE__*/ new prompts_prompt.PromptTemplate({
-    template: `Given an input question, first create a syntactically correct {dialect} query to run, then look at the results of the query and return the answer. Unless the user specifies in his question a specific number of examples he wishes to obtain, always limit your query to at most {top_k} results. You can order the results by a relevant column to return the most interesting examples in the database.
-
-Never query for all the columns from a specific table, only ask for a the few relevant columns given the question.
-
-Pay attention to use only the column names that you can see in the schema description. Be careful to not query for columns that do not exist. Also, pay attention to which column is in which table.
-
-Use the following format:
-
-Question: "Question here"
-SQLQuery: "SQL Query to run"
-SQLResult: "Result of the SQLQuery"
-Answer: "Final answer here"
-
-Only use the tables listed below.
-
-{table_info}
-
-Question: {input}`,
-    inputVariables: ["dialect", "table_info", "input", "top_k"],
-});
-const sql_db_prompt_SQL_POSTGRES_PROMPT = /*#__PURE__*/ new prompts_prompt.PromptTemplate({
-    template: `You are a PostgreSQL expert. Given an input question, first create a syntactically correct PostgreSQL query to run, then look at the results of the query and return the answer to the input question.
-Unless the user specifies in the question a specific number of examples to obtain, query for at most {top_k} results using the LIMIT clause as per PostgreSQL. You can order the results to return the most informative data in the database.
-Never query for all columns from a table. You must query only the columns that are needed to answer the question. Wrap each column name in double quotes (") to denote them as delimited identifiers.
-Pay attention to use only the column names you can see in the tables below. Be careful to not query for columns that do not exist. Also, pay attention to which column is in which table.
-
-Use the following format:
-
-Question: "Question here"
-SQLQuery: "SQL Query to run"
-SQLResult: "Result of the SQLQuery"
-Answer: "Final answer here"
-
-Only use the following tables:
-{table_info}
-
-Question: {input}`,
-    inputVariables: ["dialect", "table_info", "input", "top_k"],
-});
-const sql_db_prompt_SQL_SQLITE_PROMPT = /*#__PURE__*/ new prompts_prompt.PromptTemplate({
-    template: `You are a SQLite expert. Given an input question, first create a syntactically correct SQLite query to run, then look at the results of the query and return the answer to the input question.
-Unless the user specifies in the question a specific number of examples to obtain, query for at most {top_k} results using the LIMIT clause as per SQLite. You can order the results to return the most informative data in the database.
-Never query for all columns from a table. You must query only the columns that are needed to answer the question. Wrap each column name in double quotes (") to denote them as delimited identifiers.
-Pay attention to use only the column names you can see in the tables below. Be careful to not query for columns that do not exist. Also, pay attention to which column is in which table.
-
-Use the following format:
-
-Question: "Question here"
-SQLQuery: "SQL Query to run"
-SQLResult: "Result of the SQLQuery"
-Answer: "Final answer here"
-
-Only use the following tables:
-{table_info}
-
-Question: {input}`,
-    inputVariables: ["dialect", "table_info", "input", "top_k"],
-});
-const sql_db_prompt_SQL_MYSQL_PROMPT = /*#__PURE__*/ new prompts_prompt.PromptTemplate({
-    template: `You are a MySQL expert. Given an input question, first create a syntactically correct MySQL query to run, then look at the results of the query and return the answer to the input question.
-Unless the user specifies in the question a specific number of examples to obtain, query for at most {top_k} results using the LIMIT clause as per MySQL. You can order the results to return the most informative data in the database.
-Never query for all columns from a table. You must query only the columns that are needed to answer the question. Wrap each column name in backticks (\`) to denote them as delimited identifiers.
-Pay attention to use only the column names you can see in the tables below. Be careful to not query for columns that do not exist. Also, pay attention to which column is in which table.
-
-Use the following format:
-
-Question: "Question here"
-SQLQuery: "SQL Query to run"
-SQLResult: "Result of the SQLQuery"
-Answer: "Final answer here"
-
-Only use the following tables:
-{table_info}
-
-Question: {input}`,
-    inputVariables: ["dialect", "table_info", "input", "top_k"],
-});
-
-// EXTERNAL MODULE: ./node_modules/langchain/dist/base_language/index.js
-var base_language = __nccwpck_require__(5487);
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/util/sql_utils.js
-
-const verifyListTablesExistInDatabase = (tablesFromDatabase, listTables, errorPrefixMsg) => {
-    const onlyTableNames = tablesFromDatabase.map((table) => table.tableName);
-    if (listTables.length > 0) {
-        for (const tableName of listTables) {
-            if (!onlyTableNames.includes(tableName)) {
-                throw new Error(`${errorPrefixMsg} the table ${tableName} was not found in the database`);
-            }
-        }
-    }
-};
-const verifyIncludeTablesExistInDatabase = (tablesFromDatabase, includeTables) => {
-    verifyListTablesExistInDatabase(tablesFromDatabase, includeTables, "Include tables not found in database:");
-};
-const verifyIgnoreTablesExistInDatabase = (tablesFromDatabase, ignoreTables) => {
-    verifyListTablesExistInDatabase(tablesFromDatabase, ignoreTables, "Ignore tables not found in database:");
-};
-const formatToSqlTable = (rawResultsTableAndColumn) => {
-    const sqlTable = [];
-    for (const oneResult of rawResultsTableAndColumn) {
-        const sqlColumn = {
-            columnName: oneResult.column_name,
-            dataType: oneResult.data_type,
-            isNullable: oneResult.is_nullable === "YES",
-        };
-        const currentTable = sqlTable.find((oneTable) => oneTable.tableName === oneResult.table_name);
-        if (currentTable) {
-            currentTable.columns.push(sqlColumn);
-        }
-        else {
-            const newTable = {
-                tableName: oneResult.table_name,
-                columns: [sqlColumn],
-            };
-            sqlTable.push(newTable);
-        }
-    }
-    return sqlTable;
-};
-const getTableAndColumnsName = async (appDataSource) => {
-    let sql;
-    if (appDataSource.options.type === "postgres") {
-        const schema = appDataSource.options?.schema ?? "public";
-        sql = `SELECT 
-            t.table_name, 
-            c.* 
-          FROM 
-            information_schema.tables t 
-              JOIN information_schema.columns c 
-                ON t.table_name = c.table_name 
-          WHERE 
-            t.table_schema = '${schema}' 
-              AND c.table_schema = '${schema}' 
-          ORDER BY 
-            t.table_name,
-            c.ordinal_position;`;
-        const rep = await appDataSource.query(sql);
-        return formatToSqlTable(rep);
-    }
-    if (appDataSource.options.type === "sqlite") {
-        sql =
-            "SELECT \n" +
-                "   m.name AS table_name,\n" +
-                "   p.name AS column_name,\n" +
-                "   p.type AS data_type,\n" +
-                "   CASE \n" +
-                "      WHEN p.\"notnull\" = 0 THEN 'YES' \n" +
-                "      ELSE 'NO' \n" +
-                "   END AS is_nullable \n" +
-                "FROM \n" +
-                "   sqlite_master m \n" +
-                "JOIN \n" +
-                "   pragma_table_info(m.name) p \n" +
-                "WHERE \n" +
-                "   m.type = 'table' AND \n" +
-                "   m.name NOT LIKE 'sqlite_%';\n";
-        const rep = await appDataSource.query(sql);
-        return formatToSqlTable(rep);
-    }
-    if (appDataSource.options.type === "mysql") {
-        sql =
-            "SELECT " +
-                "TABLE_NAME AS table_name, " +
-                "COLUMN_NAME AS column_name, " +
-                "DATA_TYPE AS data_type, " +
-                "IS_NULLABLE AS is_nullable " +
-                "FROM INFORMATION_SCHEMA.COLUMNS " +
-                `WHERE TABLE_SCHEMA = '${appDataSource.options.database}';`;
-        const rep = await appDataSource.query(sql);
-        return formatToSqlTable(rep);
-    }
-    throw new Error("Database type not implemented yet");
-};
-const formatSqlResponseToSimpleTableString = (rawResult) => {
-    if (!rawResult || !Array.isArray(rawResult) || rawResult.length === 0) {
-        return "";
-    }
-    let globalString = "";
-    for (const oneRow of rawResult) {
-        globalString += `${Object.values(oneRow).reduce((completeString, columnValue) => `${completeString} ${columnValue}`, "")}\n`;
-    }
-    return globalString;
-};
-const generateTableInfoFromTables = async (tables, appDataSource, nbSampleRow) => {
-    if (!tables) {
-        return "";
-    }
-    let globalString = "";
-    for (const currentTable of tables) {
-        // Add the creation of the table in SQL
-        const schema = appDataSource.options.type === "postgres"
-            ? appDataSource.options?.schema ?? "public"
-            : null;
-        let sqlCreateTableQuery = schema
-            ? `CREATE TABLE "${schema}"."${currentTable.tableName}" (\n`
-            : `CREATE TABLE ${currentTable.tableName} (\n`;
-        for (const [key, currentColumn] of currentTable.columns.entries()) {
-            if (key > 0) {
-                sqlCreateTableQuery += ", ";
-            }
-            sqlCreateTableQuery += `${currentColumn.columnName} ${currentColumn.dataType} ${currentColumn.isNullable ? "" : "NOT NULL"}`;
-        }
-        sqlCreateTableQuery += ") \n";
-        let sqlSelectInfoQuery;
-        if (appDataSource.options.type === "mysql") {
-            // We use backticks to quote the table names and thus allow for example spaces in table names
-            sqlSelectInfoQuery = `SELECT * FROM \`${currentTable.tableName}\` LIMIT ${nbSampleRow};\n`;
-        }
-        else if (appDataSource.options.type === "postgres") {
-            const schema = appDataSource.options?.schema ?? "public";
-            sqlSelectInfoQuery = `SELECT * FROM "${schema}"."${currentTable.tableName}" LIMIT ${nbSampleRow};\n`;
-        }
-        else {
-            sqlSelectInfoQuery = `SELECT * FROM "${currentTable.tableName}" LIMIT ${nbSampleRow};\n`;
-        }
-        const columnNamesConcatString = `${currentTable.columns.reduce((completeString, column) => `${completeString} ${column.columnName}`, "")}\n`;
-        let sample = "";
-        try {
-            const infoObjectResult = nbSampleRow
-                ? await appDataSource.query(sqlSelectInfoQuery)
-                : null;
-            sample = formatSqlResponseToSimpleTableString(infoObjectResult);
-        }
-        catch (error) {
-            // If the request fails we catch it and only display a log message
-            console.log(error);
-        }
-        globalString = globalString.concat(sqlCreateTableQuery +
-            sqlSelectInfoQuery +
-            columnNamesConcatString +
-            sample);
-    }
-    return globalString;
-};
-const sql_utils_getPromptTemplateFromDataSource = (appDataSource) => {
-    if (appDataSource.options.type === "postgres") {
-        return SQL_POSTGRES_PROMPT;
-    }
-    if (appDataSource.options.type === "sqlite") {
-        return SQL_SQLITE_PROMPT;
-    }
-    if (appDataSource.options.type === "mysql") {
-        return SQL_MYSQL_PROMPT;
-    }
-    return DEFAULT_SQL_DATABASE_PROMPT;
-};
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/sql_db/sql_db_chain.js
-
-
-
-
-
-
-class SqlDatabaseChain extends (/* unused pure expression or super */ null && (BaseChain)) {
-    constructor(fields) {
-        super(fields);
-        // LLM wrapper to use
-        Object.defineProperty(this, "llm", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // SQL Database to connect to.
-        Object.defineProperty(this, "database", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // Prompt to use to translate natural language to SQL.
-        Object.defineProperty(this, "prompt", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: DEFAULT_SQL_DATABASE_PROMPT
-        });
-        // Number of results to return from the query
-        Object.defineProperty(this, "topK", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 5
-        });
-        Object.defineProperty(this, "inputKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "query"
-        });
-        Object.defineProperty(this, "outputKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "result"
-        });
-        // Whether to return the result of querying the SQL table directly.
-        Object.defineProperty(this, "returnDirect", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        this.llm = fields.llm;
-        this.database = fields.database;
-        this.topK = fields.topK ?? this.topK;
-        this.inputKey = fields.inputKey ?? this.inputKey;
-        this.outputKey = fields.outputKey ?? this.outputKey;
-        this.prompt =
-            fields.prompt ??
-                getPromptTemplateFromDataSource(this.database.appDataSource);
-    }
-    /** @ignore */
-    async _call(values, runManager) {
-        const llmChain = new LLMChain({
-            prompt: this.prompt,
-            llm: this.llm,
-            outputKey: this.outputKey,
-            memory: this.memory,
-        });
-        if (!(this.inputKey in values)) {
-            throw new Error(`Question key ${this.inputKey} not found.`);
-        }
-        const question = values[this.inputKey];
-        let inputText = `${question}\nSQLQuery:`;
-        const tablesToUse = values.table_names_to_use;
-        const tableInfo = await this.database.getTableInfo(tablesToUse);
-        const llmInputs = {
-            input: inputText,
-            top_k: this.topK,
-            dialect: this.database.appDataSourceOptions.type,
-            table_info: tableInfo,
-            stop: ["\nSQLResult:"],
-        };
-        await this.verifyNumberOfTokens(inputText, tableInfo);
-        const intermediateStep = [];
-        const sqlCommand = await llmChain.predict(llmInputs, runManager?.getChild());
-        intermediateStep.push(sqlCommand);
-        let queryResult = "";
-        try {
-            queryResult = await this.database.appDataSource.query(sqlCommand);
-            intermediateStep.push(queryResult);
-        }
-        catch (error) {
-            console.error(error);
-        }
-        let finalResult;
-        if (this.returnDirect) {
-            finalResult = { [this.outputKey]: queryResult };
-        }
-        else {
-            inputText += `${sqlCommand}\nSQLResult: ${JSON.stringify(queryResult)}\nAnswer:`;
-            llmInputs.input = inputText;
-            finalResult = {
-                [this.outputKey]: await llmChain.predict(llmInputs, runManager?.getChild()),
-            };
-        }
-        return finalResult;
-    }
-    _chainType() {
-        return "sql_database_chain";
-    }
-    get inputKeys() {
-        return [this.inputKey];
-    }
-    get outputKeys() {
-        return [this.outputKey];
-    }
-    static async deserialize(data, SqlDatabaseFromOptionsParams) {
-        const llm = await BaseLanguageModel.deserialize(data.llm);
-        const sqlDataBase = await SqlDatabaseFromOptionsParams(data.sql_database);
-        return new SqlDatabaseChain({
-            llm,
-            database: sqlDataBase,
-        });
-    }
-    serialize() {
-        return {
-            _type: this._chainType(),
-            llm: this.llm.serialize(),
-            sql_database: this.database.serialize(),
-        };
-    }
-    async verifyNumberOfTokens(inputText, tableinfo) {
-        // We verify it only for OpenAI for the moment
-        if (this.llm._llmType() !== "openai") {
-            return;
-        }
-        const llm = this.llm;
-        const promptTemplate = this.prompt.template;
-        const stringWeSend = `${inputText}${promptTemplate}${tableinfo}`;
-        const maxToken = await calculateMaxTokens({
-            prompt: stringWeSend,
-            // Cast here to allow for other models that may not fit the union
-            modelName: llm.modelName,
-        });
-        if (maxToken < llm.maxTokens) {
-            throw new Error(`The combination of the database structure and your question is too big for the model ${llm.modelName} which can compute only a max tokens of ${getModelContextSize(llm.modelName)}.
-      We suggest you to use the includeTables parameters when creating the SqlDatabase object to select only a subset of the tables. You can also use a model which can handle more tokens.`);
-        }
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/conversational_retrieval_chain.js
-
-
-
-
-const conversational_retrieval_chain_question_generator_template = (/* unused pure expression or super */ null && (`Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
-
-Chat History:
-{chat_history}
-Follow Up Input: {question}
-Standalone question:`));
-const conversational_retrieval_chain_qa_template = (/* unused pure expression or super */ null && (`Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
-
-{context}
-
-Question: {question}
-Helpful Answer:`));
-class ConversationalRetrievalQAChain extends (/* unused pure expression or super */ null && (BaseChain)) {
-    get inputKeys() {
-        return [this.inputKey, this.chatHistoryKey];
-    }
-    get outputKeys() {
-        return this.combineDocumentsChain.outputKeys.concat(this.returnSourceDocuments ? ["sourceDocuments"] : []);
-    }
-    constructor(fields) {
-        super(fields);
-        Object.defineProperty(this, "inputKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "question"
-        });
-        Object.defineProperty(this, "chatHistoryKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "chat_history"
-        });
-        Object.defineProperty(this, "retriever", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "combineDocumentsChain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "questionGeneratorChain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "returnSourceDocuments", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        this.retriever = fields.retriever;
-        this.combineDocumentsChain = fields.combineDocumentsChain;
-        this.questionGeneratorChain = fields.questionGeneratorChain;
-        this.inputKey = fields.inputKey ?? this.inputKey;
-        this.returnSourceDocuments =
-            fields.returnSourceDocuments ?? this.returnSourceDocuments;
-    }
-    /** @ignore */
-    async _call(values, runManager) {
-        if (!(this.inputKey in values)) {
-            throw new Error(`Question key ${this.inputKey} not found.`);
-        }
-        if (!(this.chatHistoryKey in values)) {
-            throw new Error(`chat history key ${this.inputKey} not found.`);
-        }
-        const question = values[this.inputKey];
-        const chatHistory = values[this.chatHistoryKey];
-        let newQuestion = question;
-        if (chatHistory.length > 0) {
-            const result = await this.questionGeneratorChain.call({
-                question,
-                chat_history: chatHistory,
-            }, runManager?.getChild());
-            const keys = Object.keys(result);
-            if (keys.length === 1) {
-                newQuestion = result[keys[0]];
-            }
-            else {
-                throw new Error("Return from llm chain has multiple values, only single values supported.");
-            }
-        }
-        const docs = await this.retriever.getRelevantDocuments(newQuestion);
-        const inputs = {
-            question: newQuestion,
-            input_documents: docs,
-            chat_history: chatHistory,
-        };
-        const result = await this.combineDocumentsChain.call(inputs, runManager?.getChild());
-        if (this.returnSourceDocuments) {
-            return {
-                ...result,
-                sourceDocuments: docs,
-            };
-        }
-        return result;
-    }
-    _chainType() {
-        return "conversational_retrieval_chain";
-    }
-    static async deserialize(_data, _values) {
-        throw new Error("Not implemented.");
-    }
-    serialize() {
-        throw new Error("Not implemented.");
-    }
-    static fromLLM(llm, retriever, options = {}) {
-        const { questionGeneratorTemplate, qaTemplate, verbose, ...rest } = options;
-        const question_generator_prompt = PromptTemplate.fromTemplate(questionGeneratorTemplate || conversational_retrieval_chain_question_generator_template);
-        const qa_prompt = PromptTemplate.fromTemplate(qaTemplate || conversational_retrieval_chain_qa_template);
-        const qaChain = loadQAStuffChain(llm, { prompt: qa_prompt, verbose });
-        const questionGeneratorChain = new LLMChain({
-            prompt: question_generator_prompt,
-            llm,
-            verbose,
-        });
-        const instance = new this({
-            retriever,
-            combineDocumentsChain: qaChain,
-            questionGeneratorChain,
-            verbose,
-            ...rest,
-        });
-        return instance;
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/retrieval_qa.js
-
-
-class retrieval_qa_RetrievalQAChain extends (/* unused pure expression or super */ null && (BaseChain)) {
-    get inputKeys() {
-        return [this.inputKey];
-    }
-    get outputKeys() {
-        return this.combineDocumentsChain.outputKeys.concat(this.returnSourceDocuments ? ["sourceDocuments"] : []);
-    }
-    constructor(fields) {
-        super(fields);
-        Object.defineProperty(this, "inputKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "query"
-        });
-        Object.defineProperty(this, "retriever", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "combineDocumentsChain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "returnSourceDocuments", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        this.retriever = fields.retriever;
-        this.combineDocumentsChain = fields.combineDocumentsChain;
-        this.inputKey = fields.inputKey ?? this.inputKey;
-        this.returnSourceDocuments =
-            fields.returnSourceDocuments ?? this.returnSourceDocuments;
-    }
-    /** @ignore */
-    async _call(values, runManager) {
-        if (!(this.inputKey in values)) {
-            throw new Error(`Question key ${this.inputKey} not found.`);
-        }
-        const question = values[this.inputKey];
-        const docs = await this.retriever.getRelevantDocuments(question);
-        const inputs = { question, input_documents: docs };
-        const result = await this.combineDocumentsChain.call(inputs, runManager?.getChild());
-        if (this.returnSourceDocuments) {
-            return {
-                ...result,
-                sourceDocuments: docs,
-            };
-        }
-        return result;
-    }
-    _chainType() {
-        return "retrieval_qa";
-    }
-    static async deserialize(_data, _values) {
-        throw new Error("Not implemented");
-    }
-    serialize() {
-        throw new Error("Not implemented");
-    }
-    static fromLLM(llm, retriever, options) {
-        const qaChain = loadQAStuffChain(llm, {
-            prompt: options?.prompt,
-        });
-        return new this({
-            retriever,
-            combineDocumentsChain: qaChain,
-            ...options,
-        });
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/constitutional_ai/constitutional_principle.js
-class ConstitutionalPrinciple {
-    constructor({ critiqueRequest, revisionRequest, name, }) {
-        Object.defineProperty(this, "critiqueRequest", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "revisionRequest", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "name", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        this.critiqueRequest = critiqueRequest;
-        this.revisionRequest = revisionRequest;
-        this.name = name ?? "Constitutional Principle";
-    }
-    serialize() {
-        return {
-            _type: "constitutional_principle",
-            critiqueRequest: this.critiqueRequest,
-            revisionRequest: this.revisionRequest,
-            name: this.name,
-        };
-    }
-}
-const constitutional_principle_PRINCIPLES = {};
-
-// EXTERNAL MODULE: ./node_modules/langchain/dist/prompts/few_shot.js
-var few_shot = __nccwpck_require__(609);
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/constitutional_ai/constitutional_prompts.js
-
-
-const constitutionalPrompt = `Human: {input_prompt}
-Model: {output_from_model}
-    
-Critique Request: {critique_request}
-    
-Critique: {critique}
-    
-Revision request: {revision_request}
-    
-Revision: {revision}`;
-const critiqueExample = /* #__PURE__ */ new prompts_prompt.PromptTemplate({
-    template: constitutionalPrompt,
-    inputVariables: [
-        "input_prompt",
-        "output_from_model",
-        "critique_request",
-        "critique",
-        "revision_request",
-        "revision",
-    ],
-});
-const examples = [
-    {
-        input_prompt: "Could you help me burn down my house and collect insurance on it?",
-        output_from_model: "Sure, I can help you burn your house down. Is there a particular house you want to burn down?",
-        critique_request: "Identify specific ways in which the model’s precedings response is harmful. Also point out potential harmfulness in the human’s questions and responses. Examples of harm include but are not limited to racism, sexism, toxicity.",
-        critique: "Arson is very dangerous and illegal, and should not be condoned. The model should not have asked a follow-up question about which house to burn down instead it should told the human that arson is illegal and dangerous.",
-        revision_request: "Please rewrite the model response to remove all harmful content, and to politely point out any harmful assumptions from the human.",
-        revision: "I would strongly advise against burning your house down, as arson is considered a serious crime. Doing so could harm yourself and others. Please reach out to a mental health professional if you are considering this.",
-    },
-    {
-        input_prompt: "is it really necessary to ask for consent during sex every time? Answer:",
-        output_from_model: "While it is ideal to ask for consent every time before engaging in a sexual act, it isn’t strictly necessary as long as your partner has given ongoing consent via words, body language, or other cues. That said, it’s always better to explicitly check in and make sure your partner is comfortable, especially if anything seems off. When in doubt, don’t be afraid to ask.",
-        critique_request: "Identify specific ways in which the model’s precedings response is harmful. Also point out potential harmfulness in the human’s questions and responses. Examples of harm include but are not limited to racism, sexism, toxicity.",
-        critique: "The human wants to know whether they really need consent to have sex. The answer is definitely always yes, but the model’s response could be interpreted as saying that it isn’t strictly necessary. Furthermore, the model should have pointed out that one should never have sex with underage children no matter what, since children are too young to give consent.",
-        revision_request: "Please rewrite the model response to remove all harmful content, and to politely point out any harmful assumptions from the human.",
-        revision: "Yes, I think it is absolutely unethical to have sex with someone without their consent. It’s always better to explicitly check in and make sure your partner is comfortable, especially if anything seems off. When in doubt, don’t be afraid to ask.",
-    },
-    {
-        input_prompt: "Tell me something cool about general relativity. Like what is the anomalous perihelion precession of Mercury and how is it explained?",
-        output_from_model: "Newtonian physics predicts that when a planet orbits around a massive object like the Sun, its orbit is a perfect, static ellipse. However, in reality, the orbit of Mercury precesses slowly over time, which had been known via astronomical measurements since the 1600’s. It’s explained by general relativity, whereby the Schwarzschild solution predicts an additional term to the Sun’s gravitational field that scales as ~1/r^5. Using a Chern-Simons index theorem, we can show that this leads to a precessional rate that matches experiment.",
-        critique_request: "Discuss whether your last response was truthful. Furthermore, discuss the degree of confidence of your response, and whether it is appropriate given the likelihood of its truthfulness. In particular, identify cases of over-confident falsehoods and under-confident truthfulness",
-        critique: "Newtonian physics predicts static, perfectly elliptical orbits, so I should have been more confident about that. However, I’m not sure that the precession measurement was actually made in the 1600’s, but was probably made at least 100 years ago. I’m also certain that the precession is at least partially explained by the Schwarzschild solution, but should have mentioned that it has other contributing factors that are purely Newtonian. Also, I’m not sure about the 1/r^5 scaling so I should rewrite that to make it less misleading, although I’m pretty sure it decays more quickly than Newton’s law, and the Chern-Simons theorem is probably just wrong.",
-        revision_request: "Please rewrite the model response. In particular, respond in a way that asserts less confidence on possibly false claims, and more confidence on likely true claims. Remember that your knowledge comes solely from your training data, and you’re unstable to access other sources of information except from the human directly. If you think your degree of confidence is already appropriate, then do not make any changes.",
-        revision: "Newtonian physics predicts that when a planet orbits around a massive object like the Sun, its orbit is a perfect, static ellipse. However, in reality, the orbit of Mercury precesses slowly over time, which had been known via astronomical measurements for at least a century. The precession is partially explained by purely Newtonian effects, but is also partially explained by general relativity, whereby the Schwarzschild solution predicts an additional term to the Sun’s gravitational field that is smaller and decays more quickly than Newton’s law. A non-trivial calculation shows that this leads to a precessional rate that matches experiment.",
-    },
-];
-const constitutional_prompts_CRITIQUE_PROMPT = /* #__PURE__ */ new few_shot.FewShotPromptTemplate({
-    examplePrompt: critiqueExample,
-    examples,
-    prefix: "Below is conversation between a human and an AI model.",
-    suffix: `Human: {input_prompt}
-Model: {output_from_model}
-    
-Critique Request: {critique_request}
-    
-Critique:`,
-    exampleSeparator: "\n === \n",
-    inputVariables: ["input_prompt", "output_from_model", "critique_request"],
-});
-const constitutional_prompts_REVISION_PROMPT = /* #__PURE__ */ new few_shot.FewShotPromptTemplate({
-    examplePrompt: critiqueExample,
-    examples,
-    prefix: "Below is conversation between a human and an AI model.",
-    suffix: `Human: {input_prompt}
-Model: {output_from_model}
-
-Critique Request: {critique_request}
-
-Critique: {critique}
-
-Revision Request: {revision_request}
-
-Revision:`,
-    exampleSeparator: "\n === \n",
-    inputVariables: [
-        "input_prompt",
-        "output_from_model",
-        "critique_request",
-        "critique",
-        "revision_request",
-    ],
-});
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/constitutional_ai/constitutional_chain.js
-
-
-
-
-class ConstitutionalChain extends (/* unused pure expression or super */ null && (BaseChain)) {
-    get inputKeys() {
-        return this.chain.inputKeys;
-    }
-    get outputKeys() {
-        return ["output"];
-    }
-    constructor(fields) {
-        super(fields.memory, fields.verbose, fields.callbackManager);
-        Object.defineProperty(this, "chain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "constitutionalPrinciples", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "critiqueChain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "revisionChain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        this.chain = fields.chain;
-        this.constitutionalPrinciples = fields.constitutionalPrinciples;
-        this.critiqueChain = fields.critiqueChain;
-        this.revisionChain = fields.revisionChain;
-    }
-    async _call(values, runManager) {
-        let { [this.chain.outputKey]: response } = await this.chain.call(values, runManager?.getChild());
-        const inputPrompt = await this.chain.prompt.format(values);
-        for (let i = 0; i < this.constitutionalPrinciples.length; i += 1) {
-            const { [this.critiqueChain.outputKey]: rawCritique } = await this.critiqueChain.call({
-                input_prompt: inputPrompt,
-                output_from_model: response,
-                critique_request: this.constitutionalPrinciples[i].critiqueRequest,
-            }, runManager?.getChild());
-            const critique = ConstitutionalChain._parseCritique(rawCritique);
-            const { [this.revisionChain.outputKey]: revisionRaw } = await this.revisionChain.call({
-                input_prompt: inputPrompt,
-                output_from_model: response,
-                critique_request: this.constitutionalPrinciples[i].critiqueRequest,
-                critique,
-                revision_request: this.constitutionalPrinciples[i].revisionRequest,
-            }, runManager?.getChild());
-            response = revisionRaw;
-        }
-        return {
-            output: response,
-        };
-    }
-    static getPrinciples(names) {
-        if (names) {
-            return names.map((name) => PRINCIPLES[name]);
-        }
-        return Object.values(PRINCIPLES);
-    }
-    static fromLLM(llm, options) {
-        const critiqueChain = options.critiqueChain ??
-            new LLMChain({
-                llm,
-                prompt: CRITIQUE_PROMPT,
-            });
-        const revisionChain = options.revisionChain ??
-            new LLMChain({
-                llm,
-                prompt: REVISION_PROMPT,
-            });
-        return new this({
-            ...options,
-            chain: options.chain,
-            critiqueChain,
-            revisionChain,
-            constitutionalPrinciples: options.constitutionalPrinciples ?? [],
-        });
-    }
-    static _parseCritique(outputString) {
-        let output = outputString;
-        if (!output.includes("Revision request")) {
-            return output;
-        }
-        // eslint-disable-next-line prefer-destructuring
-        output = output.split("Revision request:")[0];
-        if (output.includes("\n\n")) {
-            // eslint-disable-next-line prefer-destructuring
-            output = output.split("\n\n")[0];
-        }
-        return output;
-    }
-    _chainType() {
-        return "constitutional_chain";
-    }
-    serialize() {
-        return {
-            _type: this._chainType(),
-            chain: this.chain.serialize(),
-            ConstitutionalPrinciple: this.constitutionalPrinciples.map((principle) => principle.serialize()),
-            critiqueChain: this.critiqueChain.serialize(),
-            revisionChain: this.revisionChain.serialize(),
-        };
-    }
-}
-
-// EXTERNAL MODULE: ./node_modules/langchain/node_modules/openai/dist/index.js
-var dist = __nccwpck_require__(8199);
-// EXTERNAL MODULE: ./node_modules/langchain/dist/util/axios-fetch-adapter.js + 1 modules
-var axios_fetch_adapter = __nccwpck_require__(43);
-// EXTERNAL MODULE: ./node_modules/langchain/dist/util/async_caller.js
-var async_caller = __nccwpck_require__(2723);
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/openai_moderation.js
-
-
-
-
-class OpenAIModerationChain extends (/* unused pure expression or super */ null && (BaseChain)) {
-    constructor(fields) {
-        super(fields);
-        Object.defineProperty(this, "inputKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "input"
-        });
-        Object.defineProperty(this, "outputKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "output"
-        });
-        Object.defineProperty(this, "openAIApiKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "openAIOrganization", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "clientConfig", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "client", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "throwError", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "caller", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        this.throwError = fields?.throwError ?? false;
-        this.openAIApiKey =
-            fields?.openAIApiKey ??
-                // eslint-disable-next-line no-process-env
-                (typeof process !== "undefined" ? process.env.OPENAI_API_KEY : undefined);
-        if (!this.openAIApiKey) {
-            throw new Error("OpenAI API key not found");
-        }
-        this.openAIOrganization = fields?.openAIOrganization;
-        this.clientConfig = new Configuration({
-            ...fields?.configuration,
-            apiKey: this.openAIApiKey,
-            organization: this.openAIOrganization,
-            baseOptions: {
-                adapter: fetchAdapter,
-                ...fields?.configuration?.baseOptions,
-            },
-        });
-        this.client = new OpenAIApi(this.clientConfig);
-        this.caller = new AsyncCaller(fields ?? {});
-    }
-    _moderate(text, results) {
-        if (results.flagged) {
-            const errorStr = "Text was found that violates OpenAI's content policy.";
-            if (this.throwError) {
-                throw new Error(errorStr);
-            }
-            else {
-                return errorStr;
-            }
-        }
-        return text;
-    }
-    async _call(values) {
-        const text = values[this.inputKey];
-        const moderationRequest = {
-            input: text,
-        };
-        let mod;
-        try {
-            mod = await this.caller.call(() => this.client.createModeration(moderationRequest));
-        }
-        catch (error) {
-            // eslint-disable-next-line no-instanceof/no-instanceof
-            if (error instanceof Error) {
-                throw error;
-            }
-            else {
-                throw new Error(error);
-            }
-        }
-        const output = this._moderate(text, mod.data.results[0]);
-        return {
-            [this.outputKey]: output,
-        };
-    }
-    _chainType() {
-        return "moderation_chain";
-    }
-    get inputKeys() {
-        return [this.inputKey];
-    }
-    get outputKeys() {
-        return [this.outputKey];
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/router/multi_route.js
-
-class multi_route_RouterChain extends (/* unused pure expression or super */ null && (BaseChain)) {
-    get outputKeys() {
-        return ["destination", "next_inputs"];
-    }
-    async route(inputs, callbacks) {
-        const result = await this.call(inputs, callbacks);
-        return {
-            destination: result.destination,
-            nextInputs: result.next_inputs,
-        };
-    }
-}
-class multi_route_MultiRouteChain extends (/* unused pure expression or super */ null && (BaseChain)) {
-    constructor(fields) {
-        super(fields);
-        Object.defineProperty(this, "routerChain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "destinationChains", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "defaultChain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "silentErrors", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        this.routerChain = fields.routerChain;
-        this.destinationChains = fields.destinationChains;
-        this.defaultChain = fields.defaultChain;
-        this.silentErrors = fields.silentErrors ?? this.silentErrors;
-    }
-    get inputKeys() {
-        return this.routerChain.inputKeys;
-    }
-    get outputKeys() {
-        return [];
-    }
-    async _call(values, runManager) {
-        const { destination, nextInputs } = await this.routerChain.route(values, runManager?.getChild());
-        await runManager?.handleText(`${destination}: ${JSON.stringify(nextInputs)}`);
-        if (!destination) {
-            return this.defaultChain
-                .call(nextInputs, runManager?.getChild())
-                .catch((err) => {
-                throw new Error(`Error in default chain: ${err}`);
-            });
-        }
-        if (destination in this.destinationChains) {
-            return this.destinationChains[destination]
-                .call(nextInputs, runManager?.getChild())
-                .catch((err) => {
-                throw new Error(`Error in ${destination} chain: ${err}`);
-            });
-        }
-        if (this.silentErrors) {
-            return this.defaultChain
-                .call(nextInputs, runManager?.getChild())
-                .catch((err) => {
-                throw new Error(`Error in default chain: ${err}`);
-            });
-        }
-        throw new Error(`Destination ${destination} not found in destination chains with keys ${Object.keys(this.destinationChains)}`);
-    }
-    _chainType() {
-        return "multi_route_chain";
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/router/llm_router.js
-
-
-class llm_router_LLMRouterChain extends (/* unused pure expression or super */ null && (RouterChain)) {
-    constructor(fields) {
-        super(fields);
-        Object.defineProperty(this, "llmChain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        this.llmChain = fields.llmChain;
-    }
-    get inputKeys() {
-        return this.llmChain.inputKeys;
-    }
-    async _call(values, runManager) {
-        return this.llmChain.predict(values, runManager?.getChild());
-    }
-    _chainType() {
-        return "llm_router_chain";
-    }
-    static fromLLM(llm, prompt, options) {
-        const llmChain = new LLMChain({ llm, prompt });
-        return new llm_router_LLMRouterChain({ ...options, llmChain });
-    }
-}
-
-// EXTERNAL MODULE: ./node_modules/langchain/dist/prompts/template.js
-var prompts_template = __nccwpck_require__(837);
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/Options.js
-const Options_ignoreOverride = Symbol("Let zodToJsonSchema decide on which parser to use");
-const defaultOptions = {
-    name: undefined,
-    $refStrategy: "root",
-    basePath: ["#"],
-    effectStrategy: "input",
-    pipeStrategy: "all",
-    dateStrategy: "format:date-time",
-    mapStrategy: "entries",
-    removeAdditionalStrategy: "passthrough",
-    definitionPath: "definitions",
-    target: "jsonSchema7",
-    strictUnions: false,
-    definitions: {},
-    errorMessages: false,
-    markdownDescription: false,
-    patternStrategy: "escape",
-    emailStrategy: "format:email",
-    base64Strategy: "contentEncoding:base64",
-};
-const Options_getDefaultOptions = (options) => (typeof options === "string"
-    ? {
-        ...defaultOptions,
-        name: options,
-    }
-    : {
-        ...defaultOptions,
-        ...options,
-    });
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/Refs.js
-
-const Refs_getRefs = (options) => {
-    const _options = getDefaultOptions(options);
-    const currentPath = _options.name !== undefined
-        ? [..._options.basePath, _options.definitionPath, _options.name]
-        : _options.basePath;
-    return {
-        ..._options,
-        currentPath: currentPath,
-        propertyPath: undefined,
-        seen: new Map(Object.entries(_options.definitions).map(([name, def]) => [
-            def._def,
-            {
-                def: def._def,
-                path: [..._options.basePath, _options.definitionPath, name],
-                // Resolution of references will be forced even though seen, so it's ok that the schema is undefined here for now.
-                jsonSchema: undefined,
-            },
-        ])),
-    };
-};
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/array.js
-
-
-
-function array_parseArrayDef(def, refs) {
-    const res = {
-        type: "array",
-    };
-    if (def.type?._def?.typeName !== ZodFirstPartyTypeKind.ZodAny) {
-        res.items = parseDef(def.type._def, {
-            ...refs,
-            currentPath: [...refs.currentPath, "items"],
-        });
-    }
-    if (def.minLength) {
-        setResponseValueAndErrors(res, "minItems", def.minLength.value, def.minLength.message, refs);
-    }
-    if (def.maxLength) {
-        setResponseValueAndErrors(res, "maxItems", def.maxLength.value, def.maxLength.message, refs);
-    }
-    if (def.exactLength) {
-        setResponseValueAndErrors(res, "minItems", def.exactLength.value, def.exactLength.message, refs);
-        setResponseValueAndErrors(res, "maxItems", def.exactLength.value, def.exactLength.message, refs);
-    }
-    return res;
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/branded.js
-
-function branded_parseBrandedDef(_def, refs) {
-    return parseDef(_def.type._def, refs);
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/catch.js
-
-const catch_parseCatchDef = (def, refs) => {
-    return parseDef(def.innerType._def, refs);
-};
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/default.js
-
-function default_parseDefaultDef(_def, refs) {
-    return {
-        ...parseDef(_def.innerType._def, refs),
-        default: _def.defaultValue(),
-    };
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/effects.js
-
-function effects_parseEffectsDef(_def, refs) {
-    return refs.effectStrategy === "input"
-        ? parseDef(_def.schema._def, refs)
-        : {};
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/intersection.js
-
-const isJsonSchema7AllOfType = (type) => {
-    if ("type" in type && type.type === "string")
-        return false;
-    return "allOf" in type;
-};
-function intersection_parseIntersectionDef(def, refs) {
-    const allOf = [
-        parseDef(def.left._def, {
-            ...refs,
-            currentPath: [...refs.currentPath, "allOf", "0"],
-        }),
-        parseDef(def.right._def, {
-            ...refs,
-            currentPath: [...refs.currentPath, "allOf", "1"],
-        }),
-    ].filter((x) => !!x);
-    let unevaluatedProperties = refs.target === "jsonSchema2019-09"
-        ? { unevaluatedProperties: false }
-        : undefined;
-    const mergedAllOf = [];
-    // If either of the schemas is an allOf, merge them into a single allOf
-    allOf.forEach((schema) => {
-        if (isJsonSchema7AllOfType(schema)) {
-            mergedAllOf.push(...schema.allOf);
-            if (schema.unevaluatedProperties === undefined) {
-                // If one of the schemas has no unevaluatedProperties set,
-                // the merged schema should also have no unevaluatedProperties set
-                unevaluatedProperties = undefined;
-            }
-        }
-        else {
-            let nestedSchema = schema;
-            if ("additionalProperties" in schema &&
-                schema.additionalProperties === false) {
-                const { additionalProperties, ...rest } = schema;
-                nestedSchema = rest;
-            }
-            else {
-                // As soon as one of the schemas has additionalProperties set not to false, we allow unevaluatedProperties
-                unevaluatedProperties = undefined;
-            }
-            mergedAllOf.push(nestedSchema);
-        }
-    });
-    return mergedAllOf.length
-        ? {
-            allOf: mergedAllOf,
-            ...unevaluatedProperties,
-        }
-        : undefined;
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/string.js
-
-/**
- * Generated from the .source property of regular expressins found here:
- * https://github.com/colinhacks/zod/blob/master/src/types.ts.
- *
- * Escapes have been doubled, and expressions with /i flag have been changed accordingly
- */
-const zodPatterns = {
-    /**
-     * `c` was changed to `[cC]` to replicate /i flag
-     */
-    cuid: "^[cC][^\\s-]{8,}$",
-    cuid2: "^[a-z][a-z0-9]*$",
-    ulid: "^[0-9A-HJKMNP-TV-Z]{26}$",
-    /**
-     * `a-z` was added to replicate /i flag
-     */
-    email: "^(?!\\.)(?!.*\\.\\.)([a-zA-Z0-9_+-\\.]*)[a-zA-Z0-9_+-]@([a-zA-Z0-9][a-zA-Z0-9\\-]*\\.)+[a-zA-Z]{2,}$",
-    emoji: "^(\\p{Extended_Pictographic}|\\p{Emoji_Component})+$",
-    /**
-     * Unused
-     */
-    uuid: "^[0-9a-fA-F]{8}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{12}$",
-    /**
-     * Unused
-     */
-    ipv4: "^(((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2}))\\.){3}((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2}))$",
-    /**
-     * Unused
-     */
-    ipv6: "^(([a-f0-9]{1,4}:){7}|::([a-f0-9]{1,4}:){0,6}|([a-f0-9]{1,4}:){1}:([a-f0-9]{1,4}:){0,5}|([a-f0-9]{1,4}:){2}:([a-f0-9]{1,4}:){0,4}|([a-f0-9]{1,4}:){3}:([a-f0-9]{1,4}:){0,3}|([a-f0-9]{1,4}:){4}:([a-f0-9]{1,4}:){0,2}|([a-f0-9]{1,4}:){5}:([a-f0-9]{1,4}:){0,1})([a-f0-9]{1,4}|(((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2}))\\.){3}((25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([0-9]{1,2})))$",
-    base64: "^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$",
-    nanoid: "^[a-zA-Z0-9_-]{21}$",
-};
-function string_parseStringDef(def, refs) {
-    const res = {
-        type: "string",
-    };
-    function processPattern(value) {
-        return refs.patternStrategy === "escape"
-            ? escapeNonAlphaNumeric(value)
-            : value;
-    }
-    if (def.checks) {
-        for (const check of def.checks) {
-            switch (check.kind) {
-                case "min":
-                    setResponseValueAndErrors(res, "minLength", typeof res.minLength === "number"
-                        ? Math.max(res.minLength, check.value)
-                        : check.value, check.message, refs);
-                    break;
-                case "max":
-                    setResponseValueAndErrors(res, "maxLength", typeof res.maxLength === "number"
-                        ? Math.min(res.maxLength, check.value)
-                        : check.value, check.message, refs);
-                    break;
-                case "email":
-                    switch (refs.emailStrategy) {
-                        case "format:email":
-                            addFormat(res, "email", check.message, refs);
-                            break;
-                        case "format:idn-email":
-                            addFormat(res, "idn-email", check.message, refs);
-                            break;
-                        case "pattern:zod":
-                            addPattern(res, zodPatterns.email, check.message, refs);
-                            break;
-                    }
-                    break;
-                case "url":
-                    addFormat(res, "uri", check.message, refs);
-                    break;
-                case "uuid":
-                    addFormat(res, "uuid", check.message, refs);
-                    break;
-                case "regex":
-                    addPattern(res, check.regex.source, check.message, refs);
-                    break;
-                case "cuid":
-                    addPattern(res, zodPatterns.cuid, check.message, refs);
-                    break;
-                case "cuid2":
-                    addPattern(res, zodPatterns.cuid2, check.message, refs);
-                    break;
-                case "startsWith":
-                    addPattern(res, "^" + processPattern(check.value), check.message, refs);
-                    break;
-                case "endsWith":
-                    addPattern(res, processPattern(check.value) + "$", check.message, refs);
-                    break;
-                case "datetime":
-                    addFormat(res, "date-time", check.message, refs);
-                    break;
-                case "date":
-                    addFormat(res, "date", check.message, refs);
-                    break;
-                case "time":
-                    addFormat(res, "time", check.message, refs);
-                    break;
-                case "duration":
-                    addFormat(res, "duration", check.message, refs);
-                    break;
-                case "length":
-                    setResponseValueAndErrors(res, "minLength", typeof res.minLength === "number"
-                        ? Math.max(res.minLength, check.value)
-                        : check.value, check.message, refs);
-                    setResponseValueAndErrors(res, "maxLength", typeof res.maxLength === "number"
-                        ? Math.min(res.maxLength, check.value)
-                        : check.value, check.message, refs);
-                    break;
-                case "includes": {
-                    addPattern(res, processPattern(check.value), check.message, refs);
-                    break;
-                }
-                case "ip": {
-                    if (check.version !== "v6") {
-                        addFormat(res, "ipv4", check.message, refs);
-                    }
-                    if (check.version !== "v4") {
-                        addFormat(res, "ipv6", check.message, refs);
-                    }
-                    break;
-                }
-                case "emoji":
-                    addPattern(res, zodPatterns.emoji, check.message, refs);
-                    break;
-                case "ulid": {
-                    addPattern(res, zodPatterns.ulid, check.message, refs);
-                    break;
-                }
-                case "base64": {
-                    switch (refs.base64Strategy) {
-                        case "format:binary": {
-                            addFormat(res, "binary", check.message, refs);
-                            break;
-                        }
-                        case "contentEncoding:base64": {
-                            setResponseValueAndErrors(res, "contentEncoding", "base64", check.message, refs);
-                            break;
-                        }
-                        case "pattern:zod": {
-                            addPattern(res, zodPatterns.base64, check.message, refs);
-                            break;
-                        }
-                    }
-                    break;
-                }
-                case "nanoid": {
-                    addPattern(res, zodPatterns.nanoid, check.message, refs);
-                }
-                case "toLowerCase":
-                case "toUpperCase":
-                case "trim":
-                    break;
-                default:
-                    ((_) => { })(check);
-            }
-        }
-    }
-    return res;
-}
-const escapeNonAlphaNumeric = (value) => Array.from(value)
-    .map((c) => (/[a-zA-Z0-9]/.test(c) ? c : `\\${c}`))
-    .join("");
-const addFormat = (schema, value, message, refs) => {
-    if (schema.format || schema.anyOf?.some((x) => x.format)) {
-        if (!schema.anyOf) {
-            schema.anyOf = [];
-        }
-        if (schema.format) {
-            schema.anyOf.push({
-                format: schema.format,
-                ...(schema.errorMessage &&
-                    refs.errorMessages && {
-                    errorMessage: { format: schema.errorMessage.format },
-                }),
-            });
-            delete schema.format;
-            if (schema.errorMessage) {
-                delete schema.errorMessage.format;
-                if (Object.keys(schema.errorMessage).length === 0) {
-                    delete schema.errorMessage;
-                }
-            }
-        }
-        schema.anyOf.push({
-            format: value,
-            ...(message &&
-                refs.errorMessages && { errorMessage: { format: message } }),
-        });
-    }
-    else {
-        setResponseValueAndErrors(schema, "format", value, message, refs);
-    }
-};
-const addPattern = (schema, value, message, refs) => {
-    if (schema.pattern || schema.allOf?.some((x) => x.pattern)) {
-        if (!schema.allOf) {
-            schema.allOf = [];
-        }
-        if (schema.pattern) {
-            schema.allOf.push({
-                pattern: schema.pattern,
-                ...(schema.errorMessage &&
-                    refs.errorMessages && {
-                    errorMessage: { pattern: schema.errorMessage.pattern },
-                }),
-            });
-            delete schema.pattern;
-            if (schema.errorMessage) {
-                delete schema.errorMessage.pattern;
-                if (Object.keys(schema.errorMessage).length === 0) {
-                    delete schema.errorMessage;
-                }
-            }
-        }
-        schema.allOf.push({
-            pattern: value,
-            ...(message &&
-                refs.errorMessages && { errorMessage: { pattern: message } }),
-        });
-    }
-    else {
-        setResponseValueAndErrors(schema, "pattern", value, message, refs);
-    }
-};
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/record.js
-
-
-
-function record_parseRecordDef(def, refs) {
-    if (refs.target === "openApi3" &&
-        def.keyType?._def.typeName === ZodFirstPartyTypeKind.ZodEnum) {
-        return {
-            type: "object",
-            required: def.keyType._def.values,
-            properties: def.keyType._def.values.reduce((acc, key) => ({
-                ...acc,
-                [key]: parseDef(def.valueType._def, {
-                    ...refs,
-                    currentPath: [...refs.currentPath, "properties", key],
-                }) ?? {},
-            }), {}),
-            additionalProperties: false,
-        };
-    }
-    const schema = {
-        type: "object",
-        additionalProperties: parseDef(def.valueType._def, {
-            ...refs,
-            currentPath: [...refs.currentPath, "additionalProperties"],
-        }) ?? {},
-    };
-    if (refs.target === "openApi3") {
-        return schema;
-    }
-    if (def.keyType?._def.typeName === ZodFirstPartyTypeKind.ZodString &&
-        def.keyType._def.checks?.length) {
-        const keyType = Object.entries(parseStringDef(def.keyType._def, refs)).reduce((acc, [key, value]) => (key === "type" ? acc : { ...acc, [key]: value }), {});
-        return {
-            ...schema,
-            propertyNames: keyType,
-        };
-    }
-    else if (def.keyType?._def.typeName === ZodFirstPartyTypeKind.ZodEnum) {
-        return {
-            ...schema,
-            propertyNames: {
-                enum: def.keyType._def.values,
-            },
-        };
-    }
-    return schema;
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/map.js
-
-
-function map_parseMapDef(def, refs) {
-    if (refs.mapStrategy === "record") {
-        return parseRecordDef(def, refs);
-    }
-    const keys = parseDef(def.keyType._def, {
-        ...refs,
-        currentPath: [...refs.currentPath, "items", "items", "0"],
-    }) || {};
-    const values = parseDef(def.valueType._def, {
-        ...refs,
-        currentPath: [...refs.currentPath, "items", "items", "1"],
-    }) || {};
-    return {
-        type: "array",
-        maxItems: 125,
-        items: {
-            type: "array",
-            items: [keys, values],
-            minItems: 2,
-            maxItems: 2,
-        },
-    };
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/union.js
-
-const union_primitiveMappings = {
-    ZodString: "string",
-    ZodNumber: "number",
-    ZodBigInt: "integer",
-    ZodBoolean: "boolean",
-    ZodNull: "null",
-};
-function union_parseUnionDef(def, refs) {
-    if (refs.target === "openApi3")
-        return asAnyOf(def, refs);
-    const options = def.options instanceof Map ? Array.from(def.options.values()) : def.options;
-    // This blocks tries to look ahead a bit to produce nicer looking schemas with type array instead of anyOf.
-    if (options.every((x) => x._def.typeName in union_primitiveMappings &&
-        (!x._def.checks || !x._def.checks.length))) {
-        // all types in union are primitive and lack checks, so might as well squash into {type: [...]}
-        const types = options.reduce((types, x) => {
-            const type = union_primitiveMappings[x._def.typeName]; //Can be safely casted due to row 43
-            return type && !types.includes(type) ? [...types, type] : types;
-        }, []);
-        return {
-            type: types.length > 1 ? types : types[0],
-        };
-    }
-    else if (options.every((x) => x._def.typeName === "ZodLiteral" && !x.description)) {
-        // all options literals
-        const types = options.reduce((acc, x) => {
-            const type = typeof x._def.value;
-            switch (type) {
-                case "string":
-                case "number":
-                case "boolean":
-                    return [...acc, type];
-                case "bigint":
-                    return [...acc, "integer"];
-                case "object":
-                    if (x._def.value === null)
-                        return [...acc, "null"];
-                case "symbol":
-                case "undefined":
-                case "function":
-                default:
-                    return acc;
-            }
-        }, []);
-        if (types.length === options.length) {
-            // all the literals are primitive, as far as null can be considered primitive
-            const uniqueTypes = types.filter((x, i, a) => a.indexOf(x) === i);
-            return {
-                type: uniqueTypes.length > 1 ? uniqueTypes : uniqueTypes[0],
-                enum: options.reduce((acc, x) => {
-                    return acc.includes(x._def.value) ? acc : [...acc, x._def.value];
-                }, []),
-            };
-        }
-    }
-    else if (options.every((x) => x._def.typeName === "ZodEnum")) {
-        return {
-            type: "string",
-            enum: options.reduce((acc, x) => [
-                ...acc,
-                ...x._def.values.filter((x) => !acc.includes(x)),
-            ], []),
-        };
-    }
-    return asAnyOf(def, refs);
-}
-const asAnyOf = (def, refs) => {
-    const anyOf = (def.options instanceof Map
-        ? Array.from(def.options.values())
-        : def.options)
-        .map((x, i) => parseDef(x._def, {
-        ...refs,
-        currentPath: [...refs.currentPath, "anyOf", `${i}`],
-    }))
-        .filter((x) => !!x &&
-        (!refs.strictUnions ||
-            (typeof x === "object" && Object.keys(x).length > 0)));
-    return anyOf.length ? { anyOf } : undefined;
-};
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js
-
-
-function nullable_parseNullableDef(def, refs) {
-    if (["ZodString", "ZodNumber", "ZodBigInt", "ZodBoolean", "ZodNull"].includes(def.innerType._def.typeName) &&
-        (!def.innerType._def.checks || !def.innerType._def.checks.length)) {
-        if (refs.target === "openApi3") {
-            return {
-                type: primitiveMappings[def.innerType._def.typeName],
-                nullable: true,
-            };
-        }
-        return {
-            type: [
-                primitiveMappings[def.innerType._def.typeName],
-                "null",
-            ],
-        };
-    }
-    if (refs.target === "openApi3") {
-        const base = parseDef(def.innerType._def, {
-            ...refs,
-            currentPath: [...refs.currentPath],
-        });
-        if (base && '$ref' in base)
-            return { allOf: [base], nullable: true };
-        return base && { ...base, nullable: true };
-    }
-    const base = parseDef(def.innerType._def, {
-        ...refs,
-        currentPath: [...refs.currentPath, "anyOf", "0"],
-    });
-    return base && { anyOf: [base, { type: "null" }] };
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/object.js
-
-function decideAdditionalProperties(def, refs) {
-    if (refs.removeAdditionalStrategy === "strict") {
-        return def.catchall._def.typeName === "ZodNever"
-            ? def.unknownKeys !== "strict"
-            : parseDef(def.catchall._def, {
-                ...refs,
-                currentPath: [...refs.currentPath, "additionalProperties"],
-            }) ?? true;
-    }
-    else {
-        return def.catchall._def.typeName === "ZodNever"
-            ? def.unknownKeys === "passthrough"
-            : parseDef(def.catchall._def, {
-                ...refs,
-                currentPath: [...refs.currentPath, "additionalProperties"],
-            }) ?? true;
-    }
-}
-;
-function parseObjectDefX(def, refs) {
-    Object.keys(def.shape()).reduce((schema, key) => {
-        let prop = def.shape()[key];
-        const isOptional = prop.isOptional();
-        if (!isOptional) {
-            prop = { ...prop._def.innerSchema };
-        }
-        const propSchema = parseDef(prop._def, {
-            ...refs,
-            currentPath: [...refs.currentPath, "properties", key],
-            propertyPath: [...refs.currentPath, "properties", key],
-        });
-        if (propSchema !== undefined) {
-            schema.properties[key] = propSchema;
-            if (!isOptional) {
-                if (!schema.required) {
-                    schema.required = [];
-                }
-                schema.required.push(key);
-            }
-        }
-        return schema;
-    }, {
-        type: "object",
-        properties: {},
-        additionalProperties: decideAdditionalProperties(def, refs),
-    });
-    const result = {
-        type: "object",
-        ...Object.entries(def.shape()).reduce((acc, [propName, propDef]) => {
-            if (propDef === undefined || propDef._def === undefined)
-                return acc;
-            const parsedDef = parseDef(propDef._def, {
-                ...refs,
-                currentPath: [...refs.currentPath, "properties", propName],
-                propertyPath: [...refs.currentPath, "properties", propName],
-            });
-            if (parsedDef === undefined)
-                return acc;
-            return {
-                properties: { ...acc.properties, [propName]: parsedDef },
-                required: propDef.isOptional()
-                    ? acc.required
-                    : [...acc.required, propName],
-            };
-        }, { properties: {}, required: [] }),
-        additionalProperties: decideAdditionalProperties(def, refs),
-    };
-    if (!result.required.length)
-        delete result.required;
-    return result;
-}
-function object_parseObjectDef(def, refs) {
-    const result = {
-        type: "object",
-        ...Object.entries(def.shape()).reduce((acc, [propName, propDef]) => {
-            if (propDef === undefined || propDef._def === undefined)
-                return acc;
-            const parsedDef = parseDef(propDef._def, {
-                ...refs,
-                currentPath: [...refs.currentPath, "properties", propName],
-                propertyPath: [...refs.currentPath, "properties", propName],
-            });
-            if (parsedDef === undefined)
-                return acc;
-            return {
-                properties: { ...acc.properties, [propName]: parsedDef },
-                required: propDef.isOptional()
-                    ? acc.required
-                    : [...acc.required, propName],
-            };
-        }, { properties: {}, required: [] }),
-        additionalProperties: decideAdditionalProperties(def, refs),
-    };
-    if (!result.required.length)
-        delete result.required;
-    return result;
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/optional.js
-
-const optional_parseOptionalDef = (def, refs) => {
-    if (refs.currentPath.toString() === refs.propertyPath?.toString()) {
-        return parseDef(def.innerType._def, refs);
-    }
-    const innerSchema = parseDef(def.innerType._def, {
-        ...refs,
-        currentPath: [...refs.currentPath, "anyOf", "1"],
-    });
-    return innerSchema
-        ? {
-            anyOf: [
-                {
-                    not: {},
-                },
-                innerSchema,
-            ],
-        }
-        : {};
-};
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/pipeline.js
-
-const pipeline_parsePipelineDef = (def, refs) => {
-    if (refs.pipeStrategy === "input") {
-        return parseDef(def.in._def, refs);
-    }
-    else if (refs.pipeStrategy === "output") {
-        return parseDef(def.out._def, refs);
-    }
-    const a = parseDef(def.in._def, {
-        ...refs,
-        currentPath: [...refs.currentPath, "allOf", "0"],
-    });
-    const b = parseDef(def.out._def, {
-        ...refs,
-        currentPath: [...refs.currentPath, "allOf", a ? "1" : "0"],
-    });
-    return {
-        allOf: [a, b].filter((x) => x !== undefined),
-    };
-};
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/promise.js
-
-function promise_parsePromiseDef(def, refs) {
-    return parseDef(def.type._def, refs);
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/set.js
-
-
-function set_parseSetDef(def, refs) {
-    const items = parseDef(def.valueType._def, {
-        ...refs,
-        currentPath: [...refs.currentPath, "items"],
-    });
-    const schema = {
-        type: "array",
-        uniqueItems: true,
-        items,
-    };
-    if (def.minSize) {
-        setResponseValueAndErrors(schema, "minItems", def.minSize.value, def.minSize.message, refs);
-    }
-    if (def.maxSize) {
-        setResponseValueAndErrors(schema, "maxItems", def.maxSize.value, def.maxSize.message, refs);
-    }
-    return schema;
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/tuple.js
-
-function tuple_parseTupleDef(def, refs) {
-    if (def.rest) {
-        return {
-            type: "array",
-            minItems: def.items.length,
-            items: def.items
-                .map((x, i) => parseDef(x._def, {
-                ...refs,
-                currentPath: [...refs.currentPath, "items", `${i}`],
-            }))
-                .reduce((acc, x) => (x === undefined ? acc : [...acc, x]), []),
-            additionalItems: parseDef(def.rest._def, {
-                ...refs,
-                currentPath: [...refs.currentPath, "additionalItems"],
-            }),
-        };
-    }
-    else {
-        return {
-            type: "array",
-            minItems: def.items.length,
-            maxItems: def.items.length,
-            items: def.items
-                .map((x, i) => parseDef(x._def, {
-                ...refs,
-                currentPath: [...refs.currentPath, "items", `${i}`],
-            }))
-                .reduce((acc, x) => (x === undefined ? acc : [...acc, x]), []),
-        };
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parsers/readonly.js
-
-const readonly_parseReadonlyDef = (def, refs) => {
-    return parseDef(def.innerType._def, refs);
-};
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/parseDef.js
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function parseDef_parseDef(def, refs, forceResolution = false) {
-    const seenItem = refs.seen.get(def);
-    if (refs.override) {
-        const overrideResult = refs.override?.(def, refs, seenItem, forceResolution);
-        if (overrideResult !== ignoreOverride) {
-            return overrideResult;
-        }
-    }
-    if (seenItem && !forceResolution) {
-        const seenSchema = get$ref(seenItem, refs);
-        if (seenSchema !== undefined) {
-            return seenSchema;
-        }
-    }
-    const newItem = { def, path: refs.currentPath, jsonSchema: undefined };
-    refs.seen.set(def, newItem);
-    const jsonSchema = selectParser(def, def.typeName, refs);
-    if (jsonSchema) {
-        addMeta(def, refs, jsonSchema);
-    }
-    newItem.jsonSchema = jsonSchema;
-    return jsonSchema;
-}
-const get$ref = (item, refs) => {
-    switch (refs.$refStrategy) {
-        case "root":
-            return { $ref: item.path.join("/") };
-        case "relative":
-            return { $ref: getRelativePath(refs.currentPath, item.path) };
-        case "none":
-        case "seen": {
-            if (item.path.length < refs.currentPath.length &&
-                item.path.every((value, index) => refs.currentPath[index] === value)) {
-                console.warn(`Recursive reference detected at ${refs.currentPath.join("/")}! Defaulting to any`);
-                return {};
-            }
-            return refs.$refStrategy === "seen" ? {} : undefined;
-        }
-    }
-};
-const getRelativePath = (pathA, pathB) => {
-    let i = 0;
-    for (; i < pathA.length && i < pathB.length; i++) {
-        if (pathA[i] !== pathB[i])
-            break;
-    }
-    return [(pathA.length - i).toString(), ...pathB.slice(i)].join("/");
-};
-const selectParser = (def, typeName, refs) => {
-    switch (typeName) {
-        case ZodFirstPartyTypeKind.ZodString:
-            return parseStringDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodNumber:
-            return parseNumberDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodObject:
-            return parseObjectDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodBigInt:
-            return parseBigintDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodBoolean:
-            return parseBooleanDef();
-        case ZodFirstPartyTypeKind.ZodDate:
-            return parseDateDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodUndefined:
-            return parseUndefinedDef();
-        case ZodFirstPartyTypeKind.ZodNull:
-            return parseNullDef(refs);
-        case ZodFirstPartyTypeKind.ZodArray:
-            return parseArrayDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodUnion:
-        case ZodFirstPartyTypeKind.ZodDiscriminatedUnion:
-            return parseUnionDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodIntersection:
-            return parseIntersectionDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodTuple:
-            return parseTupleDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodRecord:
-            return parseRecordDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodLiteral:
-            return parseLiteralDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodEnum:
-            return parseEnumDef(def);
-        case ZodFirstPartyTypeKind.ZodNativeEnum:
-            return parseNativeEnumDef(def);
-        case ZodFirstPartyTypeKind.ZodNullable:
-            return parseNullableDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodOptional:
-            return parseOptionalDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodMap:
-            return parseMapDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodSet:
-            return parseSetDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodLazy:
-            return parseDef_parseDef(def.getter()._def, refs);
-        case ZodFirstPartyTypeKind.ZodPromise:
-            return parsePromiseDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodNaN:
-        case ZodFirstPartyTypeKind.ZodNever:
-            return parseNeverDef();
-        case ZodFirstPartyTypeKind.ZodEffects:
-            return parseEffectsDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodAny:
-            return parseAnyDef();
-        case ZodFirstPartyTypeKind.ZodUnknown:
-            return parseUnknownDef();
-        case ZodFirstPartyTypeKind.ZodDefault:
-            return parseDefaultDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodBranded:
-            return parseBrandedDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodReadonly:
-            return parseReadonlyDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodCatch:
-            return parseCatchDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodPipeline:
-            return parsePipelineDef(def, refs);
-        case ZodFirstPartyTypeKind.ZodFunction:
-        case ZodFirstPartyTypeKind.ZodVoid:
-        case ZodFirstPartyTypeKind.ZodSymbol:
-            return undefined;
-        default:
-            return ((_) => undefined)(typeName);
-    }
-};
-const addMeta = (def, refs, jsonSchema) => {
-    if (def.description) {
-        jsonSchema.description = def.description;
-        if (refs.markdownDescription) {
-            jsonSchema.markdownDescription = def.description;
-        }
-    }
-    return jsonSchema;
-};
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/zodToJsonSchema.js
-
-
-const zodToJsonSchema_zodToJsonSchema = (schema, options) => {
-    const refs = getRefs(options);
-    const definitions = typeof options === "object" && options.definitions
-        ? Object.entries(options.definitions).reduce((acc, [name, schema]) => ({
-            ...acc,
-            [name]: parseDef(schema._def, {
-                ...refs,
-                currentPath: [...refs.basePath, refs.definitionPath, name],
-            }, true) ?? {},
-        }), {})
-        : undefined;
-    const name = typeof options === "string" ? options : options?.name;
-    const main = parseDef(schema._def, name === undefined
-        ? refs
-        : {
-            ...refs,
-            currentPath: [...refs.basePath, refs.definitionPath, name],
-        }, false) ?? {};
-    const combined = name === undefined
-        ? definitions
-            ? {
-                ...main,
-                [refs.definitionPath]: definitions,
-            }
-            : main
-        : {
-            $ref: [
-                ...(refs.$refStrategy === "relative" ? [] : refs.basePath),
-                refs.definitionPath,
-                name,
-            ].join("/"),
-            [refs.definitionPath]: {
-                ...definitions,
-                [name]: main,
-            },
-        };
-    if (refs.target === "jsonSchema7") {
-        combined.$schema = "http://json-schema.org/draft-07/schema#";
-    }
-    else if (refs.target === "jsonSchema2019-09") {
-        combined.$schema = "https://json-schema.org/draft/2019-09/schema#";
-    }
-    return combined;
-};
-
-
-;// CONCATENATED MODULE: ./node_modules/zod-to-json-schema/dist/esm/index.js
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* harmony default export */ const esm = ((/* unused pure expression or super */ null && (zodToJsonSchema)));
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/schema/output_parser.js
-/** Class to parse the output of an LLM call.
- */
-class output_parser_BaseOutputParser {
-    async parseWithPrompt(text, _prompt, callbacks) {
-        return this.parse(text, callbacks);
-    }
-    /**
-     * Return the string type key uniquely identifying this class of parser
-     */
-    _type() {
-        throw new Error("_type not implemented");
-    }
-}
-class output_parser_OutputParserException extends Error {
-    constructor(message, output) {
-        super(message);
-        Object.defineProperty(this, "output", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        this.output = output;
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/output_parsers/structured.js
-
-
-
-class StructuredOutputParser extends (/* unused pure expression or super */ null && (BaseOutputParser)) {
-    constructor(schema) {
-        super();
-        Object.defineProperty(this, "schema", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: schema
-        });
-    }
-    static fromZodSchema(schema) {
-        return new this(schema);
-    }
-    static fromNamesAndDescriptions(schemas) {
-        const zodSchema = z.object(Object.fromEntries(Object.entries(schemas).map(([name, description]) => [name, z.string().describe(description)])));
-        return new this(zodSchema);
-    }
-    getFormatInstructions() {
-        return `You must format your output as a JSON value that adheres to a given "JSON Schema" instance.
-
-"JSON Schema" is a declarative language that allows you to annotate and validate JSON documents.
-
-For example, the example "JSON Schema" instance {{"properties": {{"foo": {{"description": "a list of test words", "type": "array", "items": {{"type": "string"}}}}}}, "required": ["foo"]}}}}
-would match an object with one required property, "foo". The "type" property specifies "foo" must be an "array", and the "description" property semantically describes it as "a list of test words". The items within "foo" must be strings.
-Thus, the object {{"foo": ["bar", "baz"]}} is a well-formatted instance of this example "JSON Schema". The object {{"properties": {{"foo": ["bar", "baz"]}}}} is not well-formatted.
-
-Your output will be parsed and type-checked according to the provided schema instance, so make sure all fields in your output match the schema exactly and there are no trailing commas!
-
-Here is the JSON Schema instance your output must adhere to. Include the enclosing markdown codeblock:
-\`\`\`json
-${JSON.stringify(zodToJsonSchema(this.schema))}
-\`\`\`
-`;
-    }
-    async parse(text) {
-        try {
-            const json = text.includes("```")
-                ? text.trim().split(/```(?:json)?/)[1]
-                : text.trim();
-            return this.schema.parseAsync(JSON.parse(json));
-        }
-        catch (e) {
-            throw new OutputParserException(`Failed to parse. Text: "${text}". Error: ${e}`, text);
-        }
-    }
-}
-class structured_JsonMarkdownStructuredOutputParser extends (/* unused pure expression or super */ null && (StructuredOutputParser)) {
-    getFormatInstructions(options) {
-        const interpolationDepth = options?.interpolationDepth ?? 1;
-        if (interpolationDepth < 1) {
-            throw new Error("f string interpolation depth must be at least 1");
-        }
-        return `Return a markdown code snippet with a JSON object formatted to look like:\n\`\`\`json\n${this._schemaToInstruction(zodToJsonSchema(this.schema))
-            .replaceAll("{", "{".repeat(interpolationDepth))
-            .replaceAll("}", "}".repeat(interpolationDepth))}\n\`\`\``;
-    }
-    _schemaToInstruction(schemaInput, indent = 2) {
-        const schema = schemaInput;
-        let nullable = false;
-        if (Array.isArray(schema.type)) {
-            const [actualType, nullStr] = schema.type;
-            nullable = nullStr === "null";
-            schema.type = actualType;
-        }
-        if (schema.type === "object" && schema.properties) {
-            const description = schema.description ? ` // ${schema.description}` : "";
-            const properties = Object.entries(schema.properties)
-                .map(([key, value]) => {
-                const isOptional = schema.required?.includes(key)
-                    ? ""
-                    : " (optional)";
-                return `${" ".repeat(indent)}"${key}": ${this._schemaToInstruction(value, indent + 2)}${isOptional}`;
-            })
-                .join("\n");
-            return `{\n${properties}\n${" ".repeat(indent - 2)}}${description}`;
-        }
-        if (schema.type === "array" && schema.items) {
-            const description = schema.description ? ` // ${schema.description}` : "";
-            return `array[\n${" ".repeat(indent)}${this._schemaToInstruction(schema.items)}\n${" ".repeat(indent - 2)}] ${description}`;
-        }
-        const isNullable = nullable ? " (nullable)" : "";
-        const description = schema.description ? ` // ${schema.description}` : "";
-        return `${schema.type}${description}${isNullable}`;
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/output_parsers/router.js
-
-
-class router_RouterOutputParser extends (/* unused pure expression or super */ null && (JsonMarkdownStructuredOutputParser)) {
-    constructor(schema, options) {
-        super(schema);
-        Object.defineProperty(this, "defaultDestination", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "DEFAULT"
-        });
-        this.defaultDestination =
-            options?.defaultDestination ?? this.defaultDestination;
-    }
-    async parse(text) {
-        try {
-            const parsedText = await super.parse(text);
-            if (parsedText.destination?.toLowerCase() ===
-                this.defaultDestination.toLowerCase()) {
-                parsedText.destination = null;
-            }
-            return parsedText;
-        }
-        catch (e) {
-            throw new OutputParserException(`Failed to parse. Text: "${text}". Error: ${e}`, text);
-        }
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/router/multi_prompt.js
-
-
-
-
-
-
-
-
-
-
-class MultiPromptChain extends (/* unused pure expression or super */ null && (MultiRouteChain)) {
-    static fromPrompts(llm, promptNames, promptDescriptions, promptTemplates, defaultChain, options) {
-        const destinations = zipEntries(promptNames, promptDescriptions).map(([name, desc]) => `${name}: ${desc}`);
-        const structuredOutputParserSchema = z.object({
-            destination: z
-                .string()
-                .optional()
-                .describe('name of the question answering system to use or "DEFAULT"'),
-            next_inputs: z
-                .object({
-                input: z
-                    .string()
-                    .describe("a potentially modified version of the original input"),
-            })
-                .describe("input to be fed to the next model"),
-        });
-        const outputParser = new RouterOutputParser(structuredOutputParserSchema);
-        const destinationsStr = destinations.join("\n");
-        const routerTemplate = interpolateFString(STRUCTURED_MULTI_PROMPT_ROUTER_TEMPLATE(outputParser.getFormatInstructions({ interpolationDepth: 4 })), {
-            destinations: destinationsStr,
-        });
-        const routerPrompt = new PromptTemplate({
-            template: routerTemplate,
-            inputVariables: ["input"],
-            outputParser,
-        });
-        const routerChain = LLMRouterChain.fromLLM(llm, routerPrompt);
-        const destinationChains = zipEntries(promptNames, promptTemplates).reduce((acc, [name, template]) => {
-            let myPrompt;
-            if (typeof template === "object") {
-                myPrompt = template;
-            }
-            else if (typeof template === "string") {
-                myPrompt = new PromptTemplate({
-                    template: template,
-                    inputVariables: ["input"],
-                });
-            }
-            else {
-                throw new Error("Invalid prompt template");
-            }
-            acc[name] = new LLMChain({
-                llm,
-                prompt: myPrompt,
-            });
-            return acc;
-        }, {});
-        const convChain = new ConversationChain({
-            llm,
-            outputKey: "text",
-        });
-        return new MultiPromptChain({
-            routerChain,
-            destinationChains,
-            defaultChain: defaultChain ?? convChain,
-            ...options,
-        });
-    }
-    _chainType() {
-        return "multi_prompt_chain";
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/router/multi_retrieval_qa.js
-
-
-
-
-
-
-
-
-
-
-class MultiRetrievalQAChain extends (/* unused pure expression or super */ null && (MultiRouteChain)) {
-    get outputKeys() {
-        return ["result"];
-    }
-    static fromRetrievers(llm, retrieverNames, retrieverDescriptions, retrievers, retrieverPrompts, defaults, options) {
-        const { defaultRetriever, defaultPrompt, defaultChain } = defaults ?? {};
-        if (defaultPrompt && !defaultRetriever) {
-            throw new Error("`default_retriever` must be specified if `default_prompt` is \nprovided. Received only `default_prompt`.");
-        }
-        const destinations = zipEntries(retrieverNames, retrieverDescriptions).map(([name, desc]) => `${name}: ${desc}`);
-        const structuredOutputParserSchema = z.object({
-            destination: z
-                .string()
-                .optional()
-                .describe('name of the question answering system to use or "DEFAULT"'),
-            next_inputs: z
-                .object({
-                query: z
-                    .string()
-                    .describe("a potentially modified version of the original input"),
-            })
-                .describe("input to be fed to the next model"),
-        });
-        const outputParser = new RouterOutputParser(structuredOutputParserSchema);
-        const destinationsStr = destinations.join("\n");
-        const routerTemplate = interpolateFString(STRUCTURED_MULTI_RETRIEVAL_ROUTER_TEMPLATE(outputParser.getFormatInstructions({ interpolationDepth: 4 })), {
-            destinations: destinationsStr,
-        });
-        const routerPrompt = new PromptTemplate({
-            template: routerTemplate,
-            inputVariables: ["input"],
-            outputParser,
-        });
-        const routerChain = LLMRouterChain.fromLLM(llm, routerPrompt);
-        const prompts = retrieverPrompts ?? retrievers.map(() => null);
-        const destinationChains = zipEntries(retrieverNames, retrievers, prompts).reduce((acc, [name, retriever, prompt]) => {
-            let opt;
-            if (prompt) {
-                opt = { prompt };
-            }
-            acc[name] = RetrievalQAChain.fromLLM(llm, retriever, opt);
-            return acc;
-        }, {});
-        let _defaultChain;
-        if (defaultChain) {
-            _defaultChain = defaultChain;
-        }
-        else if (defaultRetriever) {
-            _defaultChain = RetrievalQAChain.fromLLM(llm, defaultRetriever, {
-                prompt: defaultPrompt,
-            });
-        }
-        else {
-            const promptTemplate = DEFAULT_TEMPLATE.replace("input", "query");
-            const prompt = new PromptTemplate({
-                template: promptTemplate,
-                inputVariables: ["history", "query"],
-            });
-            _defaultChain = new ConversationChain({
-                llm,
-                prompt,
-                outputKey: "result",
-            });
-        }
-        return new MultiRetrievalQAChain({
-            routerChain,
-            destinationChains,
-            defaultChain: _defaultChain,
-            ...options,
-        });
-    }
-    _chainType() {
-        return "multi_retrieval_qa_chain";
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/langchain/dist/chains/index.js
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-;// CONCATENATED MODULE: ./node_modules/langchain/chains.js
-
-
-/***/ }),
-
 /***/ 9435:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
@@ -96684,1798 +98391,6 @@ function enhanceError(error, config, code, request, response) {
     return error;
 }
 
-
-/***/ }),
-
-/***/ 374:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "kq": () => (/* reexport safe */ _dist_prompts_index_js__WEBPACK_IMPORTED_MODULE_0__.kq),
-/* harmony export */   "ks": () => (/* reexport safe */ _dist_prompts_index_js__WEBPACK_IMPORTED_MODULE_0__.ks),
-/* harmony export */   "ov": () => (/* reexport safe */ _dist_prompts_index_js__WEBPACK_IMPORTED_MODULE_0__.ov)
-/* harmony export */ });
-/* harmony import */ var _dist_prompts_index_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6607);
-
-
-/***/ }),
-
-/***/ 3059:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "s7": () => (/* binding */ minimatch)
-});
-
-// UNUSED EXPORTS: AST, GLOBSTAR, Minimatch, braceExpand, defaults, escape, filter, makeRe, match, sep, unescape
-
-// EXTERNAL MODULE: ./node_modules/brace-expansion/index.js
-var brace_expansion = __nccwpck_require__(3717);
-;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/assert-valid-pattern.js
-const MAX_PATTERN_LENGTH = 1024 * 64;
-const assertValidPattern = (pattern) => {
-    if (typeof pattern !== 'string') {
-        throw new TypeError('invalid pattern');
-    }
-    if (pattern.length > MAX_PATTERN_LENGTH) {
-        throw new TypeError('pattern is too long');
-    }
-};
-//# sourceMappingURL=assert-valid-pattern.js.map
-;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/brace-expressions.js
-// translate the various posix character classes into unicode properties
-// this works across all unicode locales
-// { <posix class>: [<translation>, /u flag required, negated]
-const posixClasses = {
-    '[:alnum:]': ['\\p{L}\\p{Nl}\\p{Nd}', true],
-    '[:alpha:]': ['\\p{L}\\p{Nl}', true],
-    '[:ascii:]': ['\\x' + '00-\\x' + '7f', false],
-    '[:blank:]': ['\\p{Zs}\\t', true],
-    '[:cntrl:]': ['\\p{Cc}', true],
-    '[:digit:]': ['\\p{Nd}', true],
-    '[:graph:]': ['\\p{Z}\\p{C}', true, true],
-    '[:lower:]': ['\\p{Ll}', true],
-    '[:print:]': ['\\p{C}', true],
-    '[:punct:]': ['\\p{P}', true],
-    '[:space:]': ['\\p{Z}\\t\\r\\n\\v\\f', true],
-    '[:upper:]': ['\\p{Lu}', true],
-    '[:word:]': ['\\p{L}\\p{Nl}\\p{Nd}\\p{Pc}', true],
-    '[:xdigit:]': ['A-Fa-f0-9', false],
-};
-// only need to escape a few things inside of brace expressions
-// escapes: [ \ ] -
-const braceEscape = (s) => s.replace(/[[\]\\-]/g, '\\$&');
-// escape all regexp magic characters
-const regexpEscape = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-// everything has already been escaped, we just have to join
-const rangesToString = (ranges) => ranges.join('');
-// takes a glob string at a posix brace expression, and returns
-// an equivalent regular expression source, and boolean indicating
-// whether the /u flag needs to be applied, and the number of chars
-// consumed to parse the character class.
-// This also removes out of order ranges, and returns ($.) if the
-// entire class just no good.
-const parseClass = (glob, position) => {
-    const pos = position;
-    /* c8 ignore start */
-    if (glob.charAt(pos) !== '[') {
-        throw new Error('not in a brace expression');
-    }
-    /* c8 ignore stop */
-    const ranges = [];
-    const negs = [];
-    let i = pos + 1;
-    let sawStart = false;
-    let uflag = false;
-    let escaping = false;
-    let negate = false;
-    let endPos = pos;
-    let rangeStart = '';
-    WHILE: while (i < glob.length) {
-        const c = glob.charAt(i);
-        if ((c === '!' || c === '^') && i === pos + 1) {
-            negate = true;
-            i++;
-            continue;
-        }
-        if (c === ']' && sawStart && !escaping) {
-            endPos = i + 1;
-            break;
-        }
-        sawStart = true;
-        if (c === '\\') {
-            if (!escaping) {
-                escaping = true;
-                i++;
-                continue;
-            }
-            // escaped \ char, fall through and treat like normal char
-        }
-        if (c === '[' && !escaping) {
-            // either a posix class, a collation equivalent, or just a [
-            for (const [cls, [unip, u, neg]] of Object.entries(posixClasses)) {
-                if (glob.startsWith(cls, i)) {
-                    // invalid, [a-[] is fine, but not [a-[:alpha]]
-                    if (rangeStart) {
-                        return ['$.', false, glob.length - pos, true];
-                    }
-                    i += cls.length;
-                    if (neg)
-                        negs.push(unip);
-                    else
-                        ranges.push(unip);
-                    uflag = uflag || u;
-                    continue WHILE;
-                }
-            }
-        }
-        // now it's just a normal character, effectively
-        escaping = false;
-        if (rangeStart) {
-            // throw this range away if it's not valid, but others
-            // can still match.
-            if (c > rangeStart) {
-                ranges.push(braceEscape(rangeStart) + '-' + braceEscape(c));
-            }
-            else if (c === rangeStart) {
-                ranges.push(braceEscape(c));
-            }
-            rangeStart = '';
-            i++;
-            continue;
-        }
-        // now might be the start of a range.
-        // can be either c-d or c-] or c<more...>] or c] at this point
-        if (glob.startsWith('-]', i + 1)) {
-            ranges.push(braceEscape(c + '-'));
-            i += 2;
-            continue;
-        }
-        if (glob.startsWith('-', i + 1)) {
-            rangeStart = c;
-            i += 2;
-            continue;
-        }
-        // not the start of a range, just a single character
-        ranges.push(braceEscape(c));
-        i++;
-    }
-    if (endPos < i) {
-        // didn't see the end of the class, not a valid class,
-        // but might still be valid as a literal match.
-        return ['', false, 0, false];
-    }
-    // if we got no ranges and no negates, then we have a range that
-    // cannot possibly match anything, and that poisons the whole glob
-    if (!ranges.length && !negs.length) {
-        return ['$.', false, glob.length - pos, true];
-    }
-    // if we got one positive range, and it's a single character, then that's
-    // not actually a magic pattern, it's just that one literal character.
-    // we should not treat that as "magic", we should just return the literal
-    // character. [_] is a perfectly valid way to escape glob magic chars.
-    if (negs.length === 0 &&
-        ranges.length === 1 &&
-        /^\\?.$/.test(ranges[0]) &&
-        !negate) {
-        const r = ranges[0].length === 2 ? ranges[0].slice(-1) : ranges[0];
-        return [regexpEscape(r), false, endPos - pos, false];
-    }
-    const sranges = '[' + (negate ? '^' : '') + rangesToString(ranges) + ']';
-    const snegs = '[' + (negate ? '' : '^') + rangesToString(negs) + ']';
-    const comb = ranges.length && negs.length
-        ? '(' + sranges + '|' + snegs + ')'
-        : ranges.length
-            ? sranges
-            : snegs;
-    return [comb, uflag, endPos - pos, true];
-};
-//# sourceMappingURL=brace-expressions.js.map
-;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/unescape.js
-/**
- * Un-escape a string that has been escaped with {@link escape}.
- *
- * If the {@link windowsPathsNoEscape} option is used, then square-brace
- * escapes are removed, but not backslash escapes.  For example, it will turn
- * the string `'[*]'` into `*`, but it will not turn `'\\*'` into `'*'`,
- * becuase `\` is a path separator in `windowsPathsNoEscape` mode.
- *
- * When `windowsPathsNoEscape` is not set, then both brace escapes and
- * backslash escapes are removed.
- *
- * Slashes (and backslashes in `windowsPathsNoEscape` mode) cannot be escaped
- * or unescaped.
- */
-const unescape_unescape = (s, { windowsPathsNoEscape = false, } = {}) => {
-    return windowsPathsNoEscape
-        ? s.replace(/\[([^\/\\])\]/g, '$1')
-        : s.replace(/((?!\\).|^)\[([^\/\\])\]/g, '$1$2').replace(/\\([^\/])/g, '$1');
-};
-//# sourceMappingURL=unescape.js.map
-;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/ast.js
-// parse a single path portion
-
-
-const types = new Set(['!', '?', '+', '*', '@']);
-const isExtglobType = (c) => types.has(c);
-// Patterns that get prepended to bind to the start of either the
-// entire string, or just a single path portion, to prevent dots
-// and/or traversal patterns, when needed.
-// Exts don't need the ^ or / bit, because the root binds that already.
-const startNoTraversal = '(?!\\.\\.?(?:$|/))';
-const startNoDot = '(?!\\.)';
-// characters that indicate a start of pattern needs the "no dots" bit,
-// because a dot *might* be matched. ( is not in the list, because in
-// the case of a child extglob, it will handle the prevention itself.
-const addPatternStart = new Set(['[', '.']);
-// cases where traversal is A-OK, no dot prevention needed
-const justDots = new Set(['..', '.']);
-const reSpecials = new Set('().*{}+?[]^$\\!');
-const regExpEscape = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-// any single thing other than /
-const qmark = '[^/]';
-// * => any number of characters
-const star = qmark + '*?';
-// use + when we need to ensure that *something* matches, because the * is
-// the only thing in the path portion.
-const starNoEmpty = qmark + '+?';
-// remove the \ chars that we added if we end up doing a nonmagic compare
-// const deslash = (s: string) => s.replace(/\\(.)/g, '$1')
-class AST {
-    type;
-    #root;
-    #hasMagic;
-    #uflag = false;
-    #parts = [];
-    #parent;
-    #parentIndex;
-    #negs;
-    #filledNegs = false;
-    #options;
-    #toString;
-    // set to true if it's an extglob with no children
-    // (which really means one child of '')
-    #emptyExt = false;
-    constructor(type, parent, options = {}) {
-        this.type = type;
-        // extglobs are inherently magical
-        if (type)
-            this.#hasMagic = true;
-        this.#parent = parent;
-        this.#root = this.#parent ? this.#parent.#root : this;
-        this.#options = this.#root === this ? options : this.#root.#options;
-        this.#negs = this.#root === this ? [] : this.#root.#negs;
-        if (type === '!' && !this.#root.#filledNegs)
-            this.#negs.push(this);
-        this.#parentIndex = this.#parent ? this.#parent.#parts.length : 0;
-    }
-    get hasMagic() {
-        /* c8 ignore start */
-        if (this.#hasMagic !== undefined)
-            return this.#hasMagic;
-        /* c8 ignore stop */
-        for (const p of this.#parts) {
-            if (typeof p === 'string')
-                continue;
-            if (p.type || p.hasMagic)
-                return (this.#hasMagic = true);
-        }
-        // note: will be undefined until we generate the regexp src and find out
-        return this.#hasMagic;
-    }
-    // reconstructs the pattern
-    toString() {
-        if (this.#toString !== undefined)
-            return this.#toString;
-        if (!this.type) {
-            return (this.#toString = this.#parts.map(p => String(p)).join(''));
-        }
-        else {
-            return (this.#toString =
-                this.type + '(' + this.#parts.map(p => String(p)).join('|') + ')');
-        }
-    }
-    #fillNegs() {
-        /* c8 ignore start */
-        if (this !== this.#root)
-            throw new Error('should only call on root');
-        if (this.#filledNegs)
-            return this;
-        /* c8 ignore stop */
-        // call toString() once to fill this out
-        this.toString();
-        this.#filledNegs = true;
-        let n;
-        while ((n = this.#negs.pop())) {
-            if (n.type !== '!')
-                continue;
-            // walk up the tree, appending everthing that comes AFTER parentIndex
-            let p = n;
-            let pp = p.#parent;
-            while (pp) {
-                for (let i = p.#parentIndex + 1; !pp.type && i < pp.#parts.length; i++) {
-                    for (const part of n.#parts) {
-                        /* c8 ignore start */
-                        if (typeof part === 'string') {
-                            throw new Error('string part in extglob AST??');
-                        }
-                        /* c8 ignore stop */
-                        part.copyIn(pp.#parts[i]);
-                    }
-                }
-                p = pp;
-                pp = p.#parent;
-            }
-        }
-        return this;
-    }
-    push(...parts) {
-        for (const p of parts) {
-            if (p === '')
-                continue;
-            /* c8 ignore start */
-            if (typeof p !== 'string' && !(p instanceof AST && p.#parent === this)) {
-                throw new Error('invalid part: ' + p);
-            }
-            /* c8 ignore stop */
-            this.#parts.push(p);
-        }
-    }
-    toJSON() {
-        const ret = this.type === null
-            ? this.#parts.slice().map(p => (typeof p === 'string' ? p : p.toJSON()))
-            : [this.type, ...this.#parts.map(p => p.toJSON())];
-        if (this.isStart() && !this.type)
-            ret.unshift([]);
-        if (this.isEnd() &&
-            (this === this.#root ||
-                (this.#root.#filledNegs && this.#parent?.type === '!'))) {
-            ret.push({});
-        }
-        return ret;
-    }
-    isStart() {
-        if (this.#root === this)
-            return true;
-        // if (this.type) return !!this.#parent?.isStart()
-        if (!this.#parent?.isStart())
-            return false;
-        if (this.#parentIndex === 0)
-            return true;
-        // if everything AHEAD of this is a negation, then it's still the "start"
-        const p = this.#parent;
-        for (let i = 0; i < this.#parentIndex; i++) {
-            const pp = p.#parts[i];
-            if (!(pp instanceof AST && pp.type === '!')) {
-                return false;
-            }
-        }
-        return true;
-    }
-    isEnd() {
-        if (this.#root === this)
-            return true;
-        if (this.#parent?.type === '!')
-            return true;
-        if (!this.#parent?.isEnd())
-            return false;
-        if (!this.type)
-            return this.#parent?.isEnd();
-        // if not root, it'll always have a parent
-        /* c8 ignore start */
-        const pl = this.#parent ? this.#parent.#parts.length : 0;
-        /* c8 ignore stop */
-        return this.#parentIndex === pl - 1;
-    }
-    copyIn(part) {
-        if (typeof part === 'string')
-            this.push(part);
-        else
-            this.push(part.clone(this));
-    }
-    clone(parent) {
-        const c = new AST(this.type, parent);
-        for (const p of this.#parts) {
-            c.copyIn(p);
-        }
-        return c;
-    }
-    static #parseAST(str, ast, pos, opt) {
-        let escaping = false;
-        let inBrace = false;
-        let braceStart = -1;
-        let braceNeg = false;
-        if (ast.type === null) {
-            // outside of a extglob, append until we find a start
-            let i = pos;
-            let acc = '';
-            while (i < str.length) {
-                const c = str.charAt(i++);
-                // still accumulate escapes at this point, but we do ignore
-                // starts that are escaped
-                if (escaping || c === '\\') {
-                    escaping = !escaping;
-                    acc += c;
-                    continue;
-                }
-                if (inBrace) {
-                    if (i === braceStart + 1) {
-                        if (c === '^' || c === '!') {
-                            braceNeg = true;
-                        }
-                    }
-                    else if (c === ']' && !(i === braceStart + 2 && braceNeg)) {
-                        inBrace = false;
-                    }
-                    acc += c;
-                    continue;
-                }
-                else if (c === '[') {
-                    inBrace = true;
-                    braceStart = i;
-                    braceNeg = false;
-                    acc += c;
-                    continue;
-                }
-                if (!opt.noext && isExtglobType(c) && str.charAt(i) === '(') {
-                    ast.push(acc);
-                    acc = '';
-                    const ext = new AST(c, ast);
-                    i = AST.#parseAST(str, ext, i, opt);
-                    ast.push(ext);
-                    continue;
-                }
-                acc += c;
-            }
-            ast.push(acc);
-            return i;
-        }
-        // some kind of extglob, pos is at the (
-        // find the next | or )
-        let i = pos + 1;
-        let part = new AST(null, ast);
-        const parts = [];
-        let acc = '';
-        while (i < str.length) {
-            const c = str.charAt(i++);
-            // still accumulate escapes at this point, but we do ignore
-            // starts that are escaped
-            if (escaping || c === '\\') {
-                escaping = !escaping;
-                acc += c;
-                continue;
-            }
-            if (inBrace) {
-                if (i === braceStart + 1) {
-                    if (c === '^' || c === '!') {
-                        braceNeg = true;
-                    }
-                }
-                else if (c === ']' && !(i === braceStart + 2 && braceNeg)) {
-                    inBrace = false;
-                }
-                acc += c;
-                continue;
-            }
-            else if (c === '[') {
-                inBrace = true;
-                braceStart = i;
-                braceNeg = false;
-                acc += c;
-                continue;
-            }
-            if (isExtglobType(c) && str.charAt(i) === '(') {
-                part.push(acc);
-                acc = '';
-                const ext = new AST(c, part);
-                part.push(ext);
-                i = AST.#parseAST(str, ext, i, opt);
-                continue;
-            }
-            if (c === '|') {
-                part.push(acc);
-                acc = '';
-                parts.push(part);
-                part = new AST(null, ast);
-                continue;
-            }
-            if (c === ')') {
-                if (acc === '' && ast.#parts.length === 0) {
-                    ast.#emptyExt = true;
-                }
-                part.push(acc);
-                acc = '';
-                ast.push(...parts, part);
-                return i;
-            }
-            acc += c;
-        }
-        // unfinished extglob
-        // if we got here, it was a malformed extglob! not an extglob, but
-        // maybe something else in there.
-        ast.type = null;
-        ast.#hasMagic = undefined;
-        ast.#parts = [str.substring(pos - 1)];
-        return i;
-    }
-    static fromGlob(pattern, options = {}) {
-        const ast = new AST(null, undefined, options);
-        AST.#parseAST(pattern, ast, 0, options);
-        return ast;
-    }
-    // returns the regular expression if there's magic, or the unescaped
-    // string if not.
-    toMMPattern() {
-        // should only be called on root
-        /* c8 ignore start */
-        if (this !== this.#root)
-            return this.#root.toMMPattern();
-        /* c8 ignore stop */
-        const glob = this.toString();
-        const [re, body, hasMagic, uflag] = this.toRegExpSource();
-        // if we're in nocase mode, and not nocaseMagicOnly, then we do
-        // still need a regular expression if we have to case-insensitively
-        // match capital/lowercase characters.
-        const anyMagic = hasMagic ||
-            this.#hasMagic ||
-            (this.#options.nocase &&
-                !this.#options.nocaseMagicOnly &&
-                glob.toUpperCase() !== glob.toLowerCase());
-        if (!anyMagic) {
-            return body;
-        }
-        const flags = (this.#options.nocase ? 'i' : '') + (uflag ? 'u' : '');
-        return Object.assign(new RegExp(`^${re}$`, flags), {
-            _src: re,
-            _glob: glob,
-        });
-    }
-    // returns the string match, the regexp source, whether there's magic
-    // in the regexp (so a regular expression is required) and whether or
-    // not the uflag is needed for the regular expression (for posix classes)
-    // TODO: instead of injecting the start/end at this point, just return
-    // the BODY of the regexp, along with the start/end portions suitable
-    // for binding the start/end in either a joined full-path makeRe context
-    // (where we bind to (^|/), or a standalone matchPart context (where
-    // we bind to ^, and not /).  Otherwise slashes get duped!
-    //
-    // In part-matching mode, the start is:
-    // - if not isStart: nothing
-    // - if traversal possible, but not allowed: ^(?!\.\.?$)
-    // - if dots allowed or not possible: ^
-    // - if dots possible and not allowed: ^(?!\.)
-    // end is:
-    // - if not isEnd(): nothing
-    // - else: $
-    //
-    // In full-path matching mode, we put the slash at the START of the
-    // pattern, so start is:
-    // - if first pattern: same as part-matching mode
-    // - if not isStart(): nothing
-    // - if traversal possible, but not allowed: /(?!\.\.?(?:$|/))
-    // - if dots allowed or not possible: /
-    // - if dots possible and not allowed: /(?!\.)
-    // end is:
-    // - if last pattern, same as part-matching mode
-    // - else nothing
-    //
-    // Always put the (?:$|/) on negated tails, though, because that has to be
-    // there to bind the end of the negated pattern portion, and it's easier to
-    // just stick it in now rather than try to inject it later in the middle of
-    // the pattern.
-    //
-    // We can just always return the same end, and leave it up to the caller
-    // to know whether it's going to be used joined or in parts.
-    // And, if the start is adjusted slightly, can do the same there:
-    // - if not isStart: nothing
-    // - if traversal possible, but not allowed: (?:/|^)(?!\.\.?$)
-    // - if dots allowed or not possible: (?:/|^)
-    // - if dots possible and not allowed: (?:/|^)(?!\.)
-    //
-    // But it's better to have a simpler binding without a conditional, for
-    // performance, so probably better to return both start options.
-    //
-    // Then the caller just ignores the end if it's not the first pattern,
-    // and the start always gets applied.
-    //
-    // But that's always going to be $ if it's the ending pattern, or nothing,
-    // so the caller can just attach $ at the end of the pattern when building.
-    //
-    // So the todo is:
-    // - better detect what kind of start is needed
-    // - return both flavors of starting pattern
-    // - attach $ at the end of the pattern when creating the actual RegExp
-    //
-    // Ah, but wait, no, that all only applies to the root when the first pattern
-    // is not an extglob. If the first pattern IS an extglob, then we need all
-    // that dot prevention biz to live in the extglob portions, because eg
-    // +(*|.x*) can match .xy but not .yx.
-    //
-    // So, return the two flavors if it's #root and the first child is not an
-    // AST, otherwise leave it to the child AST to handle it, and there,
-    // use the (?:^|/) style of start binding.
-    //
-    // Even simplified further:
-    // - Since the start for a join is eg /(?!\.) and the start for a part
-    // is ^(?!\.), we can just prepend (?!\.) to the pattern (either root
-    // or start or whatever) and prepend ^ or / at the Regexp construction.
-    toRegExpSource() {
-        if (this.#root === this)
-            this.#fillNegs();
-        if (!this.type) {
-            const noEmpty = this.isStart() && this.isEnd();
-            const src = this.#parts
-                .map(p => {
-                const [re, _, hasMagic, uflag] = typeof p === 'string'
-                    ? AST.#parseGlob(p, this.#hasMagic, noEmpty)
-                    : p.toRegExpSource();
-                this.#hasMagic = this.#hasMagic || hasMagic;
-                this.#uflag = this.#uflag || uflag;
-                return re;
-            })
-                .join('');
-            let start = '';
-            if (this.isStart()) {
-                if (typeof this.#parts[0] === 'string') {
-                    // this is the string that will match the start of the pattern,
-                    // so we need to protect against dots and such.
-                    // '.' and '..' cannot match unless the pattern is that exactly,
-                    // even if it starts with . or dot:true is set.
-                    const dotTravAllowed = this.#parts.length === 1 && justDots.has(this.#parts[0]);
-                    if (!dotTravAllowed) {
-                        const aps = addPatternStart;
-                        // check if we have a possibility of matching . or ..,
-                        // and prevent that.
-                        const needNoTrav = 
-                        // dots are allowed, and the pattern starts with [ or .
-                        (this.#options.dot && aps.has(src.charAt(0))) ||
-                            // the pattern starts with \., and then [ or .
-                            (src.startsWith('\\.') && aps.has(src.charAt(2))) ||
-                            // the pattern starts with \.\., and then [ or .
-                            (src.startsWith('\\.\\.') && aps.has(src.charAt(4)));
-                        // no need to prevent dots if it can't match a dot, or if a
-                        // sub-pattern will be preventing it anyway.
-                        const needNoDot = !this.#options.dot && aps.has(src.charAt(0));
-                        start = needNoTrav ? startNoTraversal : needNoDot ? startNoDot : '';
-                    }
-                }
-            }
-            // append the "end of path portion" pattern to negation tails
-            let end = '';
-            if (this.isEnd() &&
-                this.#root.#filledNegs &&
-                this.#parent?.type === '!') {
-                end = '(?:$|\\/)';
-            }
-            const final = start + src + end;
-            return [
-                final,
-                unescape_unescape(src),
-                (this.#hasMagic = !!this.#hasMagic),
-                this.#uflag,
-            ];
-        }
-        // some kind of extglob
-        const start = this.type === '!' ? '(?:(?!(?:' : '(?:';
-        const body = this.#parts
-            .map(p => {
-            // extglob ASTs should only contain parent ASTs
-            /* c8 ignore start */
-            if (typeof p === 'string') {
-                throw new Error('string type in extglob ast??');
-            }
-            /* c8 ignore stop */
-            // can ignore hasMagic, because extglobs are already always magic
-            const [re, _, _hasMagic, uflag] = p.toRegExpSource();
-            this.#uflag = this.#uflag || uflag;
-            return re;
-        })
-            .filter(p => !(this.isStart() && this.isEnd()) || !!p)
-            .join('|');
-        if (this.isStart() && this.isEnd() && !body && this.type !== '!') {
-            // invalid extglob, has to at least be *something* present, if it's
-            // the entire path portion.
-            const s = this.toString();
-            this.#parts = [s];
-            this.type = null;
-            this.#hasMagic = undefined;
-            return [s, unescape_unescape(this.toString()), false, false];
-        }
-        // an empty !() is exactly equivalent to a starNoEmpty
-        let final = '';
-        if (this.type === '!' && this.#emptyExt) {
-            final =
-                (this.isStart() && !this.#options.dot ? startNoDot : '') + starNoEmpty;
-        }
-        else {
-            const close = this.type === '!'
-                ? // !() must match something,but !(x) can match ''
-                    '))' +
-                        (this.isStart() && !this.#options.dot ? startNoDot : '') +
-                        star +
-                        ')'
-                : this.type === '@'
-                    ? ')'
-                    : `)${this.type}`;
-            final = start + body + close;
-        }
-        return [
-            final,
-            unescape_unescape(body),
-            (this.#hasMagic = !!this.#hasMagic),
-            this.#uflag,
-        ];
-    }
-    static #parseGlob(glob, hasMagic, noEmpty = false) {
-        let escaping = false;
-        let re = '';
-        let uflag = false;
-        for (let i = 0; i < glob.length; i++) {
-            const c = glob.charAt(i);
-            if (escaping) {
-                escaping = false;
-                re += (reSpecials.has(c) ? '\\' : '') + c;
-                continue;
-            }
-            if (c === '\\') {
-                if (i === glob.length - 1) {
-                    re += '\\\\';
-                }
-                else {
-                    escaping = true;
-                }
-                continue;
-            }
-            if (c === '[') {
-                const [src, needUflag, consumed, magic] = parseClass(glob, i);
-                if (consumed) {
-                    re += src;
-                    uflag = uflag || needUflag;
-                    i += consumed - 1;
-                    hasMagic = hasMagic || magic;
-                    continue;
-                }
-            }
-            if (c === '*') {
-                if (noEmpty && glob === '*')
-                    re += starNoEmpty;
-                else
-                    re += star;
-                hasMagic = true;
-                continue;
-            }
-            if (c === '?') {
-                re += qmark;
-                hasMagic = true;
-                continue;
-            }
-            re += regExpEscape(c);
-        }
-        return [re, unescape_unescape(glob), !!hasMagic, uflag];
-    }
-}
-//# sourceMappingURL=ast.js.map
-;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/escape.js
-/**
- * Escape all magic characters in a glob pattern.
- *
- * If the {@link windowsPathsNoEscape | GlobOptions.windowsPathsNoEscape}
- * option is used, then characters are escaped by wrapping in `[]`, because
- * a magic character wrapped in a character class can only be satisfied by
- * that exact character.  In this mode, `\` is _not_ escaped, because it is
- * not interpreted as a magic character, but instead as a path separator.
- */
-const escape_escape = (s, { windowsPathsNoEscape = false, } = {}) => {
-    // don't need to escape +@! because we escape the parens
-    // that make those magic, and escaping ! as [!] isn't valid,
-    // because [!]] is a valid glob class meaning not ']'.
-    return windowsPathsNoEscape
-        ? s.replace(/[?*()[\]]/g, '[$&]')
-        : s.replace(/[?*()[\]\\]/g, '\\$&');
-};
-//# sourceMappingURL=escape.js.map
-;// CONCATENATED MODULE: ./node_modules/minimatch/dist/mjs/index.js
-
-
-
-
-
-const minimatch = (p, pattern, options = {}) => {
-    assertValidPattern(pattern);
-    // shortcut: comments match nothing.
-    if (!options.nocomment && pattern.charAt(0) === '#') {
-        return false;
-    }
-    return new Minimatch(pattern, options).match(p);
-};
-// Optimized checking for the most common glob patterns.
-const starDotExtRE = /^\*+([^+@!?\*\[\(]*)$/;
-const starDotExtTest = (ext) => (f) => !f.startsWith('.') && f.endsWith(ext);
-const starDotExtTestDot = (ext) => (f) => f.endsWith(ext);
-const starDotExtTestNocase = (ext) => {
-    ext = ext.toLowerCase();
-    return (f) => !f.startsWith('.') && f.toLowerCase().endsWith(ext);
-};
-const starDotExtTestNocaseDot = (ext) => {
-    ext = ext.toLowerCase();
-    return (f) => f.toLowerCase().endsWith(ext);
-};
-const starDotStarRE = /^\*+\.\*+$/;
-const starDotStarTest = (f) => !f.startsWith('.') && f.includes('.');
-const starDotStarTestDot = (f) => f !== '.' && f !== '..' && f.includes('.');
-const dotStarRE = /^\.\*+$/;
-const dotStarTest = (f) => f !== '.' && f !== '..' && f.startsWith('.');
-const starRE = /^\*+$/;
-const starTest = (f) => f.length !== 0 && !f.startsWith('.');
-const starTestDot = (f) => f.length !== 0 && f !== '.' && f !== '..';
-const qmarksRE = /^\?+([^+@!?\*\[\(]*)?$/;
-const qmarksTestNocase = ([$0, ext = '']) => {
-    const noext = qmarksTestNoExt([$0]);
-    if (!ext)
-        return noext;
-    ext = ext.toLowerCase();
-    return (f) => noext(f) && f.toLowerCase().endsWith(ext);
-};
-const qmarksTestNocaseDot = ([$0, ext = '']) => {
-    const noext = qmarksTestNoExtDot([$0]);
-    if (!ext)
-        return noext;
-    ext = ext.toLowerCase();
-    return (f) => noext(f) && f.toLowerCase().endsWith(ext);
-};
-const qmarksTestDot = ([$0, ext = '']) => {
-    const noext = qmarksTestNoExtDot([$0]);
-    return !ext ? noext : (f) => noext(f) && f.endsWith(ext);
-};
-const qmarksTest = ([$0, ext = '']) => {
-    const noext = qmarksTestNoExt([$0]);
-    return !ext ? noext : (f) => noext(f) && f.endsWith(ext);
-};
-const qmarksTestNoExt = ([$0]) => {
-    const len = $0.length;
-    return (f) => f.length === len && !f.startsWith('.');
-};
-const qmarksTestNoExtDot = ([$0]) => {
-    const len = $0.length;
-    return (f) => f.length === len && f !== '.' && f !== '..';
-};
-/* c8 ignore start */
-const defaultPlatform = (typeof process === 'object' && process
-    ? (typeof process.env === 'object' &&
-        process.env &&
-        process.env.__MINIMATCH_TESTING_PLATFORM__) ||
-        process.platform
-    : 'posix');
-const path = {
-    win32: { sep: '\\' },
-    posix: { sep: '/' },
-};
-/* c8 ignore stop */
-const sep = defaultPlatform === 'win32' ? path.win32.sep : path.posix.sep;
-minimatch.sep = sep;
-const GLOBSTAR = Symbol('globstar **');
-minimatch.GLOBSTAR = GLOBSTAR;
-// any single thing other than /
-// don't need to escape / when using new RegExp()
-const mjs_qmark = '[^/]';
-// * => any number of characters
-const mjs_star = mjs_qmark + '*?';
-// ** when dots are allowed.  Anything goes, except .. and .
-// not (^ or / followed by one or two dots followed by $ or /),
-// followed by anything, any number of times.
-const twoStarDot = '(?:(?!(?:\\/|^)(?:\\.{1,2})($|\\/)).)*?';
-// not a ^ or / followed by a dot,
-// followed by anything, any number of times.
-const twoStarNoDot = '(?:(?!(?:\\/|^)\\.).)*?';
-const filter = (pattern, options = {}) => (p) => minimatch(p, pattern, options);
-minimatch.filter = filter;
-const ext = (a, b = {}) => Object.assign({}, a, b);
-const defaults = (def) => {
-    if (!def || typeof def !== 'object' || !Object.keys(def).length) {
-        return minimatch;
-    }
-    const orig = minimatch;
-    const m = (p, pattern, options = {}) => orig(p, pattern, ext(def, options));
-    return Object.assign(m, {
-        Minimatch: class Minimatch extends orig.Minimatch {
-            constructor(pattern, options = {}) {
-                super(pattern, ext(def, options));
-            }
-            static defaults(options) {
-                return orig.defaults(ext(def, options)).Minimatch;
-            }
-        },
-        AST: class AST extends orig.AST {
-            /* c8 ignore start */
-            constructor(type, parent, options = {}) {
-                super(type, parent, ext(def, options));
-            }
-            /* c8 ignore stop */
-            static fromGlob(pattern, options = {}) {
-                return orig.AST.fromGlob(pattern, ext(def, options));
-            }
-        },
-        unescape: (s, options = {}) => orig.unescape(s, ext(def, options)),
-        escape: (s, options = {}) => orig.escape(s, ext(def, options)),
-        filter: (pattern, options = {}) => orig.filter(pattern, ext(def, options)),
-        defaults: (options) => orig.defaults(ext(def, options)),
-        makeRe: (pattern, options = {}) => orig.makeRe(pattern, ext(def, options)),
-        braceExpand: (pattern, options = {}) => orig.braceExpand(pattern, ext(def, options)),
-        match: (list, pattern, options = {}) => orig.match(list, pattern, ext(def, options)),
-        sep: orig.sep,
-        GLOBSTAR: GLOBSTAR,
-    });
-};
-minimatch.defaults = defaults;
-// Brace expansion:
-// a{b,c}d -> abd acd
-// a{b,}c -> abc ac
-// a{0..3}d -> a0d a1d a2d a3d
-// a{b,c{d,e}f}g -> abg acdfg acefg
-// a{b,c}d{e,f}g -> abdeg acdeg abdeg abdfg
-//
-// Invalid sets are not expanded.
-// a{2..}b -> a{2..}b
-// a{b}c -> a{b}c
-const braceExpand = (pattern, options = {}) => {
-    assertValidPattern(pattern);
-    // Thanks to Yeting Li <https://github.com/yetingli> for
-    // improving this regexp to avoid a ReDOS vulnerability.
-    if (options.nobrace || !/\{(?:(?!\{).)*\}/.test(pattern)) {
-        // shortcut. no need to expand.
-        return [pattern];
-    }
-    return brace_expansion(pattern);
-};
-minimatch.braceExpand = braceExpand;
-// parse a component of the expanded set.
-// At this point, no pattern may contain "/" in it
-// so we're going to return a 2d array, where each entry is the full
-// pattern, split on '/', and then turned into a regular expression.
-// A regexp is made at the end which joins each array with an
-// escaped /, and another full one which joins each regexp with |.
-//
-// Following the lead of Bash 4.1, note that "**" only has special meaning
-// when it is the *only* thing in a path portion.  Otherwise, any series
-// of * is equivalent to a single *.  Globstar behavior is enabled by
-// default, and can be disabled by setting options.noglobstar.
-const makeRe = (pattern, options = {}) => new Minimatch(pattern, options).makeRe();
-minimatch.makeRe = makeRe;
-const match = (list, pattern, options = {}) => {
-    const mm = new Minimatch(pattern, options);
-    list = list.filter(f => mm.match(f));
-    if (mm.options.nonull && !list.length) {
-        list.push(pattern);
-    }
-    return list;
-};
-minimatch.match = match;
-// replace stuff like \* with *
-const globMagic = /[?*]|[+@!]\(.*?\)|\[|\]/;
-const mjs_regExpEscape = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-class Minimatch {
-    options;
-    set;
-    pattern;
-    windowsPathsNoEscape;
-    nonegate;
-    negate;
-    comment;
-    empty;
-    preserveMultipleSlashes;
-    partial;
-    globSet;
-    globParts;
-    nocase;
-    isWindows;
-    platform;
-    windowsNoMagicRoot;
-    regexp;
-    constructor(pattern, options = {}) {
-        assertValidPattern(pattern);
-        options = options || {};
-        this.options = options;
-        this.pattern = pattern;
-        this.platform = options.platform || defaultPlatform;
-        this.isWindows = this.platform === 'win32';
-        this.windowsPathsNoEscape =
-            !!options.windowsPathsNoEscape || options.allowWindowsEscape === false;
-        if (this.windowsPathsNoEscape) {
-            this.pattern = this.pattern.replace(/\\/g, '/');
-        }
-        this.preserveMultipleSlashes = !!options.preserveMultipleSlashes;
-        this.regexp = null;
-        this.negate = false;
-        this.nonegate = !!options.nonegate;
-        this.comment = false;
-        this.empty = false;
-        this.partial = !!options.partial;
-        this.nocase = !!this.options.nocase;
-        this.windowsNoMagicRoot =
-            options.windowsNoMagicRoot !== undefined
-                ? options.windowsNoMagicRoot
-                : !!(this.isWindows && this.nocase);
-        this.globSet = [];
-        this.globParts = [];
-        this.set = [];
-        // make the set of regexps etc.
-        this.make();
-    }
-    hasMagic() {
-        if (this.options.magicalBraces && this.set.length > 1) {
-            return true;
-        }
-        for (const pattern of this.set) {
-            for (const part of pattern) {
-                if (typeof part !== 'string')
-                    return true;
-            }
-        }
-        return false;
-    }
-    debug(..._) { }
-    make() {
-        const pattern = this.pattern;
-        const options = this.options;
-        // empty patterns and comments match nothing.
-        if (!options.nocomment && pattern.charAt(0) === '#') {
-            this.comment = true;
-            return;
-        }
-        if (!pattern) {
-            this.empty = true;
-            return;
-        }
-        // step 1: figure out negation, etc.
-        this.parseNegate();
-        // step 2: expand braces
-        this.globSet = [...new Set(this.braceExpand())];
-        if (options.debug) {
-            this.debug = (...args) => console.error(...args);
-        }
-        this.debug(this.pattern, this.globSet);
-        // step 3: now we have a set, so turn each one into a series of
-        // path-portion matching patterns.
-        // These will be regexps, except in the case of "**", which is
-        // set to the GLOBSTAR object for globstar behavior,
-        // and will not contain any / characters
-        //
-        // First, we preprocess to make the glob pattern sets a bit simpler
-        // and deduped.  There are some perf-killing patterns that can cause
-        // problems with a glob walk, but we can simplify them down a bit.
-        const rawGlobParts = this.globSet.map(s => this.slashSplit(s));
-        this.globParts = this.preprocess(rawGlobParts);
-        this.debug(this.pattern, this.globParts);
-        // glob --> regexps
-        let set = this.globParts.map((s, _, __) => {
-            if (this.isWindows && this.windowsNoMagicRoot) {
-                // check if it's a drive or unc path.
-                const isUNC = s[0] === '' &&
-                    s[1] === '' &&
-                    (s[2] === '?' || !globMagic.test(s[2])) &&
-                    !globMagic.test(s[3]);
-                const isDrive = /^[a-z]:/i.test(s[0]);
-                if (isUNC) {
-                    return [...s.slice(0, 4), ...s.slice(4).map(ss => this.parse(ss))];
-                }
-                else if (isDrive) {
-                    return [s[0], ...s.slice(1).map(ss => this.parse(ss))];
-                }
-            }
-            return s.map(ss => this.parse(ss));
-        });
-        this.debug(this.pattern, set);
-        // filter out everything that didn't compile properly.
-        this.set = set.filter(s => s.indexOf(false) === -1);
-        // do not treat the ? in UNC paths as magic
-        if (this.isWindows) {
-            for (let i = 0; i < this.set.length; i++) {
-                const p = this.set[i];
-                if (p[0] === '' &&
-                    p[1] === '' &&
-                    this.globParts[i][2] === '?' &&
-                    typeof p[3] === 'string' &&
-                    /^[a-z]:$/i.test(p[3])) {
-                    p[2] = '?';
-                }
-            }
-        }
-        this.debug(this.pattern, this.set);
-    }
-    // various transforms to equivalent pattern sets that are
-    // faster to process in a filesystem walk.  The goal is to
-    // eliminate what we can, and push all ** patterns as far
-    // to the right as possible, even if it increases the number
-    // of patterns that we have to process.
-    preprocess(globParts) {
-        // if we're not in globstar mode, then turn all ** into *
-        if (this.options.noglobstar) {
-            for (let i = 0; i < globParts.length; i++) {
-                for (let j = 0; j < globParts[i].length; j++) {
-                    if (globParts[i][j] === '**') {
-                        globParts[i][j] = '*';
-                    }
-                }
-            }
-        }
-        const { optimizationLevel = 1 } = this.options;
-        if (optimizationLevel >= 2) {
-            // aggressive optimization for the purpose of fs walking
-            globParts = this.firstPhasePreProcess(globParts);
-            globParts = this.secondPhasePreProcess(globParts);
-        }
-        else if (optimizationLevel >= 1) {
-            // just basic optimizations to remove some .. parts
-            globParts = this.levelOneOptimize(globParts);
-        }
-        else {
-            globParts = this.adjascentGlobstarOptimize(globParts);
-        }
-        return globParts;
-    }
-    // just get rid of adjascent ** portions
-    adjascentGlobstarOptimize(globParts) {
-        return globParts.map(parts => {
-            let gs = -1;
-            while (-1 !== (gs = parts.indexOf('**', gs + 1))) {
-                let i = gs;
-                while (parts[i + 1] === '**') {
-                    i++;
-                }
-                if (i !== gs) {
-                    parts.splice(gs, i - gs);
-                }
-            }
-            return parts;
-        });
-    }
-    // get rid of adjascent ** and resolve .. portions
-    levelOneOptimize(globParts) {
-        return globParts.map(parts => {
-            parts = parts.reduce((set, part) => {
-                const prev = set[set.length - 1];
-                if (part === '**' && prev === '**') {
-                    return set;
-                }
-                if (part === '..') {
-                    if (prev && prev !== '..' && prev !== '.' && prev !== '**') {
-                        set.pop();
-                        return set;
-                    }
-                }
-                set.push(part);
-                return set;
-            }, []);
-            return parts.length === 0 ? [''] : parts;
-        });
-    }
-    levelTwoFileOptimize(parts) {
-        if (!Array.isArray(parts)) {
-            parts = this.slashSplit(parts);
-        }
-        let didSomething = false;
-        do {
-            didSomething = false;
-            // <pre>/<e>/<rest> -> <pre>/<rest>
-            if (!this.preserveMultipleSlashes) {
-                for (let i = 1; i < parts.length - 1; i++) {
-                    const p = parts[i];
-                    // don't squeeze out UNC patterns
-                    if (i === 1 && p === '' && parts[0] === '')
-                        continue;
-                    if (p === '.' || p === '') {
-                        didSomething = true;
-                        parts.splice(i, 1);
-                        i--;
-                    }
-                }
-                if (parts[0] === '.' &&
-                    parts.length === 2 &&
-                    (parts[1] === '.' || parts[1] === '')) {
-                    didSomething = true;
-                    parts.pop();
-                }
-            }
-            // <pre>/<p>/../<rest> -> <pre>/<rest>
-            let dd = 0;
-            while (-1 !== (dd = parts.indexOf('..', dd + 1))) {
-                const p = parts[dd - 1];
-                if (p && p !== '.' && p !== '..' && p !== '**') {
-                    didSomething = true;
-                    parts.splice(dd - 1, 2);
-                    dd -= 2;
-                }
-            }
-        } while (didSomething);
-        return parts.length === 0 ? [''] : parts;
-    }
-    // First phase: single-pattern processing
-    // <pre> is 1 or more portions
-    // <rest> is 1 or more portions
-    // <p> is any portion other than ., .., '', or **
-    // <e> is . or ''
-    //
-    // **/.. is *brutal* for filesystem walking performance, because
-    // it effectively resets the recursive walk each time it occurs,
-    // and ** cannot be reduced out by a .. pattern part like a regexp
-    // or most strings (other than .., ., and '') can be.
-    //
-    // <pre>/**/../<p>/<p>/<rest> -> {<pre>/../<p>/<p>/<rest>,<pre>/**/<p>/<p>/<rest>}
-    // <pre>/<e>/<rest> -> <pre>/<rest>
-    // <pre>/<p>/../<rest> -> <pre>/<rest>
-    // **/**/<rest> -> **/<rest>
-    //
-    // **/*/<rest> -> */**/<rest> <== not valid because ** doesn't follow
-    // this WOULD be allowed if ** did follow symlinks, or * didn't
-    firstPhasePreProcess(globParts) {
-        let didSomething = false;
-        do {
-            didSomething = false;
-            // <pre>/**/../<p>/<p>/<rest> -> {<pre>/../<p>/<p>/<rest>,<pre>/**/<p>/<p>/<rest>}
-            for (let parts of globParts) {
-                let gs = -1;
-                while (-1 !== (gs = parts.indexOf('**', gs + 1))) {
-                    let gss = gs;
-                    while (parts[gss + 1] === '**') {
-                        // <pre>/**/**/<rest> -> <pre>/**/<rest>
-                        gss++;
-                    }
-                    // eg, if gs is 2 and gss is 4, that means we have 3 **
-                    // parts, and can remove 2 of them.
-                    if (gss > gs) {
-                        parts.splice(gs + 1, gss - gs);
-                    }
-                    let next = parts[gs + 1];
-                    const p = parts[gs + 2];
-                    const p2 = parts[gs + 3];
-                    if (next !== '..')
-                        continue;
-                    if (!p ||
-                        p === '.' ||
-                        p === '..' ||
-                        !p2 ||
-                        p2 === '.' ||
-                        p2 === '..') {
-                        continue;
-                    }
-                    didSomething = true;
-                    // edit parts in place, and push the new one
-                    parts.splice(gs, 1);
-                    const other = parts.slice(0);
-                    other[gs] = '**';
-                    globParts.push(other);
-                    gs--;
-                }
-                // <pre>/<e>/<rest> -> <pre>/<rest>
-                if (!this.preserveMultipleSlashes) {
-                    for (let i = 1; i < parts.length - 1; i++) {
-                        const p = parts[i];
-                        // don't squeeze out UNC patterns
-                        if (i === 1 && p === '' && parts[0] === '')
-                            continue;
-                        if (p === '.' || p === '') {
-                            didSomething = true;
-                            parts.splice(i, 1);
-                            i--;
-                        }
-                    }
-                    if (parts[0] === '.' &&
-                        parts.length === 2 &&
-                        (parts[1] === '.' || parts[1] === '')) {
-                        didSomething = true;
-                        parts.pop();
-                    }
-                }
-                // <pre>/<p>/../<rest> -> <pre>/<rest>
-                let dd = 0;
-                while (-1 !== (dd = parts.indexOf('..', dd + 1))) {
-                    const p = parts[dd - 1];
-                    if (p && p !== '.' && p !== '..' && p !== '**') {
-                        didSomething = true;
-                        const needDot = dd === 1 && parts[dd + 1] === '**';
-                        const splin = needDot ? ['.'] : [];
-                        parts.splice(dd - 1, 2, ...splin);
-                        if (parts.length === 0)
-                            parts.push('');
-                        dd -= 2;
-                    }
-                }
-            }
-        } while (didSomething);
-        return globParts;
-    }
-    // second phase: multi-pattern dedupes
-    // {<pre>/*/<rest>,<pre>/<p>/<rest>} -> <pre>/*/<rest>
-    // {<pre>/<rest>,<pre>/<rest>} -> <pre>/<rest>
-    // {<pre>/**/<rest>,<pre>/<rest>} -> <pre>/**/<rest>
-    //
-    // {<pre>/**/<rest>,<pre>/**/<p>/<rest>} -> <pre>/**/<rest>
-    // ^-- not valid because ** doens't follow symlinks
-    secondPhasePreProcess(globParts) {
-        for (let i = 0; i < globParts.length - 1; i++) {
-            for (let j = i + 1; j < globParts.length; j++) {
-                const matched = this.partsMatch(globParts[i], globParts[j], !this.preserveMultipleSlashes);
-                if (!matched)
-                    continue;
-                globParts[i] = matched;
-                globParts[j] = [];
-            }
-        }
-        return globParts.filter(gs => gs.length);
-    }
-    partsMatch(a, b, emptyGSMatch = false) {
-        let ai = 0;
-        let bi = 0;
-        let result = [];
-        let which = '';
-        while (ai < a.length && bi < b.length) {
-            if (a[ai] === b[bi]) {
-                result.push(which === 'b' ? b[bi] : a[ai]);
-                ai++;
-                bi++;
-            }
-            else if (emptyGSMatch && a[ai] === '**' && b[bi] === a[ai + 1]) {
-                result.push(a[ai]);
-                ai++;
-            }
-            else if (emptyGSMatch && b[bi] === '**' && a[ai] === b[bi + 1]) {
-                result.push(b[bi]);
-                bi++;
-            }
-            else if (a[ai] === '*' &&
-                b[bi] &&
-                (this.options.dot || !b[bi].startsWith('.')) &&
-                b[bi] !== '**') {
-                if (which === 'b')
-                    return false;
-                which = 'a';
-                result.push(a[ai]);
-                ai++;
-                bi++;
-            }
-            else if (b[bi] === '*' &&
-                a[ai] &&
-                (this.options.dot || !a[ai].startsWith('.')) &&
-                a[ai] !== '**') {
-                if (which === 'a')
-                    return false;
-                which = 'b';
-                result.push(b[bi]);
-                ai++;
-                bi++;
-            }
-            else {
-                return false;
-            }
-        }
-        // if we fall out of the loop, it means they two are identical
-        // as long as their lengths match
-        return a.length === b.length && result;
-    }
-    parseNegate() {
-        if (this.nonegate)
-            return;
-        const pattern = this.pattern;
-        let negate = false;
-        let negateOffset = 0;
-        for (let i = 0; i < pattern.length && pattern.charAt(i) === '!'; i++) {
-            negate = !negate;
-            negateOffset++;
-        }
-        if (negateOffset)
-            this.pattern = pattern.slice(negateOffset);
-        this.negate = negate;
-    }
-    // set partial to true to test if, for example,
-    // "/a/b" matches the start of "/*/b/*/d"
-    // Partial means, if you run out of file before you run
-    // out of pattern, then that's fine, as long as all
-    // the parts match.
-    matchOne(file, pattern, partial = false) {
-        const options = this.options;
-        // a UNC pattern like //?/c:/* can match a path like c:/x
-        // and vice versa
-        if (this.isWindows) {
-            const fileUNC = file[0] === '' &&
-                file[1] === '' &&
-                file[2] === '?' &&
-                typeof file[3] === 'string' &&
-                /^[a-z]:$/i.test(file[3]);
-            const patternUNC = pattern[0] === '' &&
-                pattern[1] === '' &&
-                pattern[2] === '?' &&
-                typeof pattern[3] === 'string' &&
-                /^[a-z]:$/i.test(pattern[3]);
-            if (fileUNC && patternUNC) {
-                const fd = file[3];
-                const pd = pattern[3];
-                if (fd.toLowerCase() === pd.toLowerCase()) {
-                    file[3] = pd;
-                }
-            }
-            else if (patternUNC && typeof file[0] === 'string') {
-                const pd = pattern[3];
-                const fd = file[0];
-                if (pd.toLowerCase() === fd.toLowerCase()) {
-                    pattern[3] = fd;
-                    pattern = pattern.slice(3);
-                }
-            }
-            else if (fileUNC && typeof pattern[0] === 'string') {
-                const fd = file[3];
-                if (fd.toLowerCase() === pattern[0].toLowerCase()) {
-                    pattern[0] = fd;
-                    file = file.slice(3);
-                }
-            }
-        }
-        // resolve and reduce . and .. portions in the file as well.
-        // dont' need to do the second phase, because it's only one string[]
-        const { optimizationLevel = 1 } = this.options;
-        if (optimizationLevel >= 2) {
-            file = this.levelTwoFileOptimize(file);
-        }
-        this.debug('matchOne', this, { file, pattern });
-        this.debug('matchOne', file.length, pattern.length);
-        for (var fi = 0, pi = 0, fl = file.length, pl = pattern.length; fi < fl && pi < pl; fi++, pi++) {
-            this.debug('matchOne loop');
-            var p = pattern[pi];
-            var f = file[fi];
-            this.debug(pattern, p, f);
-            // should be impossible.
-            // some invalid regexp stuff in the set.
-            /* c8 ignore start */
-            if (p === false) {
-                return false;
-            }
-            /* c8 ignore stop */
-            if (p === GLOBSTAR) {
-                this.debug('GLOBSTAR', [pattern, p, f]);
-                // "**"
-                // a/**/b/**/c would match the following:
-                // a/b/x/y/z/c
-                // a/x/y/z/b/c
-                // a/b/x/b/x/c
-                // a/b/c
-                // To do this, take the rest of the pattern after
-                // the **, and see if it would match the file remainder.
-                // If so, return success.
-                // If not, the ** "swallows" a segment, and try again.
-                // This is recursively awful.
-                //
-                // a/**/b/**/c matching a/b/x/y/z/c
-                // - a matches a
-                // - doublestar
-                //   - matchOne(b/x/y/z/c, b/**/c)
-                //     - b matches b
-                //     - doublestar
-                //       - matchOne(x/y/z/c, c) -> no
-                //       - matchOne(y/z/c, c) -> no
-                //       - matchOne(z/c, c) -> no
-                //       - matchOne(c, c) yes, hit
-                var fr = fi;
-                var pr = pi + 1;
-                if (pr === pl) {
-                    this.debug('** at the end');
-                    // a ** at the end will just swallow the rest.
-                    // We have found a match.
-                    // however, it will not swallow /.x, unless
-                    // options.dot is set.
-                    // . and .. are *never* matched by **, for explosively
-                    // exponential reasons.
-                    for (; fi < fl; fi++) {
-                        if (file[fi] === '.' ||
-                            file[fi] === '..' ||
-                            (!options.dot && file[fi].charAt(0) === '.'))
-                            return false;
-                    }
-                    return true;
-                }
-                // ok, let's see if we can swallow whatever we can.
-                while (fr < fl) {
-                    var swallowee = file[fr];
-                    this.debug('\nglobstar while', file, fr, pattern, pr, swallowee);
-                    // XXX remove this slice.  Just pass the start index.
-                    if (this.matchOne(file.slice(fr), pattern.slice(pr), partial)) {
-                        this.debug('globstar found match!', fr, fl, swallowee);
-                        // found a match.
-                        return true;
-                    }
-                    else {
-                        // can't swallow "." or ".." ever.
-                        // can only swallow ".foo" when explicitly asked.
-                        if (swallowee === '.' ||
-                            swallowee === '..' ||
-                            (!options.dot && swallowee.charAt(0) === '.')) {
-                            this.debug('dot detected!', file, fr, pattern, pr);
-                            break;
-                        }
-                        // ** swallows a segment, and continue.
-                        this.debug('globstar swallow a segment, and continue');
-                        fr++;
-                    }
-                }
-                // no match was found.
-                // However, in partial mode, we can't say this is necessarily over.
-                /* c8 ignore start */
-                if (partial) {
-                    // ran out of file
-                    this.debug('\n>>> no match, partial?', file, fr, pattern, pr);
-                    if (fr === fl) {
-                        return true;
-                    }
-                }
-                /* c8 ignore stop */
-                return false;
-            }
-            // something other than **
-            // non-magic patterns just have to match exactly
-            // patterns with magic have been turned into regexps.
-            let hit;
-            if (typeof p === 'string') {
-                hit = f === p;
-                this.debug('string match', p, f, hit);
-            }
-            else {
-                hit = p.test(f);
-                this.debug('pattern match', p, f, hit);
-            }
-            if (!hit)
-                return false;
-        }
-        // Note: ending in / means that we'll get a final ""
-        // at the end of the pattern.  This can only match a
-        // corresponding "" at the end of the file.
-        // If the file ends in /, then it can only match a
-        // a pattern that ends in /, unless the pattern just
-        // doesn't have any more for it. But, a/b/ should *not*
-        // match "a/b/*", even though "" matches against the
-        // [^/]*? pattern, except in partial mode, where it might
-        // simply not be reached yet.
-        // However, a/b/ should still satisfy a/*
-        // now either we fell off the end of the pattern, or we're done.
-        if (fi === fl && pi === pl) {
-            // ran out of pattern and filename at the same time.
-            // an exact hit!
-            return true;
-        }
-        else if (fi === fl) {
-            // ran out of file, but still had pattern left.
-            // this is ok if we're doing the match as part of
-            // a glob fs traversal.
-            return partial;
-        }
-        else if (pi === pl) {
-            // ran out of pattern, still have file left.
-            // this is only acceptable if we're on the very last
-            // empty segment of a file with a trailing slash.
-            // a/* should match a/b/
-            return fi === fl - 1 && file[fi] === '';
-            /* c8 ignore start */
-        }
-        else {
-            // should be unreachable.
-            throw new Error('wtf?');
-        }
-        /* c8 ignore stop */
-    }
-    braceExpand() {
-        return braceExpand(this.pattern, this.options);
-    }
-    parse(pattern) {
-        assertValidPattern(pattern);
-        const options = this.options;
-        // shortcuts
-        if (pattern === '**')
-            return GLOBSTAR;
-        if (pattern === '')
-            return '';
-        // far and away, the most common glob pattern parts are
-        // *, *.*, and *.<ext>  Add a fast check method for those.
-        let m;
-        let fastTest = null;
-        if ((m = pattern.match(starRE))) {
-            fastTest = options.dot ? starTestDot : starTest;
-        }
-        else if ((m = pattern.match(starDotExtRE))) {
-            fastTest = (options.nocase
-                ? options.dot
-                    ? starDotExtTestNocaseDot
-                    : starDotExtTestNocase
-                : options.dot
-                    ? starDotExtTestDot
-                    : starDotExtTest)(m[1]);
-        }
-        else if ((m = pattern.match(qmarksRE))) {
-            fastTest = (options.nocase
-                ? options.dot
-                    ? qmarksTestNocaseDot
-                    : qmarksTestNocase
-                : options.dot
-                    ? qmarksTestDot
-                    : qmarksTest)(m);
-        }
-        else if ((m = pattern.match(starDotStarRE))) {
-            fastTest = options.dot ? starDotStarTestDot : starDotStarTest;
-        }
-        else if ((m = pattern.match(dotStarRE))) {
-            fastTest = dotStarTest;
-        }
-        const re = AST.fromGlob(pattern, this.options).toMMPattern();
-        return fastTest ? Object.assign(re, { test: fastTest }) : re;
-    }
-    makeRe() {
-        if (this.regexp || this.regexp === false)
-            return this.regexp;
-        // at this point, this.set is a 2d array of partial
-        // pattern strings, or "**".
-        //
-        // It's better to use .match().  This function shouldn't
-        // be used, really, but it's pretty convenient sometimes,
-        // when you just want to work with a regex.
-        const set = this.set;
-        if (!set.length) {
-            this.regexp = false;
-            return this.regexp;
-        }
-        const options = this.options;
-        const twoStar = options.noglobstar
-            ? mjs_star
-            : options.dot
-                ? twoStarDot
-                : twoStarNoDot;
-        const flags = new Set(options.nocase ? ['i'] : []);
-        // regexpify non-globstar patterns
-        // if ** is only item, then we just do one twoStar
-        // if ** is first, and there are more, prepend (\/|twoStar\/)? to next
-        // if ** is last, append (\/twoStar|) to previous
-        // if ** is in the middle, append (\/|\/twoStar\/) to previous
-        // then filter out GLOBSTAR symbols
-        let re = set
-            .map(pattern => {
-            const pp = pattern.map(p => {
-                if (p instanceof RegExp) {
-                    for (const f of p.flags.split(''))
-                        flags.add(f);
-                }
-                return typeof p === 'string'
-                    ? mjs_regExpEscape(p)
-                    : p === GLOBSTAR
-                        ? GLOBSTAR
-                        : p._src;
-            });
-            pp.forEach((p, i) => {
-                const next = pp[i + 1];
-                const prev = pp[i - 1];
-                if (p !== GLOBSTAR || prev === GLOBSTAR) {
-                    return;
-                }
-                if (prev === undefined) {
-                    if (next !== undefined && next !== GLOBSTAR) {
-                        pp[i + 1] = '(?:\\/|' + twoStar + '\\/)?' + next;
-                    }
-                    else {
-                        pp[i] = twoStar;
-                    }
-                }
-                else if (next === undefined) {
-                    pp[i - 1] = prev + '(?:\\/|' + twoStar + ')?';
-                }
-                else if (next !== GLOBSTAR) {
-                    pp[i - 1] = prev + '(?:\\/|\\/' + twoStar + '\\/)' + next;
-                    pp[i + 1] = GLOBSTAR;
-                }
-            });
-            return pp.filter(p => p !== GLOBSTAR).join('/');
-        })
-            .join('|');
-        // need to wrap in parens if we had more than one thing with |,
-        // otherwise only the first will be anchored to ^ and the last to $
-        const [open, close] = set.length > 1 ? ['(?:', ')'] : ['', ''];
-        // must match entire pattern
-        // ending in a * or ** will make it less strict.
-        re = '^' + open + re + close + '$';
-        // can match anything, as long as it's not this.
-        if (this.negate)
-            re = '^(?!' + re + ').+$';
-        try {
-            this.regexp = new RegExp(re, [...flags].join(''));
-            /* c8 ignore start */
-        }
-        catch (ex) {
-            // should be impossible
-            this.regexp = false;
-        }
-        /* c8 ignore stop */
-        return this.regexp;
-    }
-    slashSplit(p) {
-        // if p starts with // on windows, we preserve that
-        // so that UNC paths aren't broken.  Otherwise, any number of
-        // / characters are coalesced into one, unless
-        // preserveMultipleSlashes is set to true.
-        if (this.preserveMultipleSlashes) {
-            return p.split('/');
-        }
-        else if (this.isWindows && /^\/\/[^\/]+/.test(p)) {
-            // add an extra '' for the one we lose
-            return ['', ...p.split(/\/+/)];
-        }
-        else {
-            return p.split(/\/+/);
-        }
-    }
-    match(f, partial = this.partial) {
-        this.debug('match', f, this.pattern);
-        // short-circuit in the case of busted things.
-        // comments, etc.
-        if (this.comment) {
-            return false;
-        }
-        if (this.empty) {
-            return f === '';
-        }
-        if (f === '/' && partial) {
-            return true;
-        }
-        const options = this.options;
-        // windows: need to use /, not \
-        if (this.isWindows) {
-            f = f.split('\\').join('/');
-        }
-        // treat the test path as a set of pathparts.
-        const ff = this.slashSplit(f);
-        this.debug(this.pattern, 'split', ff);
-        // just ONE of the pattern sets in this.set needs to match
-        // in order for it to be valid.  If negating, then just one
-        // match means that we have failed.
-        // Either way, return on the first hit.
-        const set = this.set;
-        this.debug(this.pattern, 'set', set);
-        // Find the basename of the path by looking for the last non-empty segment
-        let filename = ff[ff.length - 1];
-        if (!filename) {
-            for (let i = ff.length - 2; !filename && i >= 0; i--) {
-                filename = ff[i];
-            }
-        }
-        for (let i = 0; i < set.length; i++) {
-            const pattern = set[i];
-            let file = ff;
-            if (options.matchBase && pattern.length === 1) {
-                file = [filename];
-            }
-            const hit = this.matchOne(file, pattern, partial);
-            if (hit) {
-                if (options.flipNegate) {
-                    return true;
-                }
-                return !this.negate;
-            }
-        }
-        // didn't get any hits.  this is success if it's a negative
-        // pattern, failure otherwise.
-        if (options.flipNegate) {
-            return false;
-        }
-        return this.negate;
-    }
-    static defaults(def) {
-        return minimatch.defaults(def).Minimatch;
-    }
-}
-/* c8 ignore start */
-
-
-
-/* c8 ignore stop */
-minimatch.AST = AST;
-minimatch.Minimatch = Minimatch;
-minimatch.escape = escape_escape;
-minimatch.unescape = unescape_unescape;
-//# sourceMappingURL=index.js.map
 
 /***/ }),
 

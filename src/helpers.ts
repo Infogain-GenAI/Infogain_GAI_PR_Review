@@ -2,7 +2,7 @@ import { GitHub } from '@actions/github/lib/utils.js'
 import type { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods/dist-types/generated/parameters-and-response-types.js'
 import { minimatch } from 'minimatch'
 import * as core from '@actions/core'
-import {systemPrompt,extensionToLanguageMap, instructionsPromptPrefix, instructionsPromptSuffix} from './constants.js'
+import {systemPrompt,instructionsPrompt,extensionToLanguageMap} from './constants.js'
 import { Effect, Context, Option, Layer, Schedule } from 'effect'
 import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from 'langchain/prompts'
 import {LLMChain} from 'langchain/chains'
@@ -11,7 +11,6 @@ import type { ChainValues } from 'langchain/schema'
 import parseDiff from 'parse-diff'
 import { NoSuchElementException, UnknownException } from 'effect/Cause'
 import { constant } from 'effect/Function'
-import {instructionsPrompt} from './main.js'
 
 export type PullRequestFileResponse = RestEndpointMethodTypes['pulls']['listFiles']['response']
 
@@ -43,57 +42,50 @@ export class PullRequestClass implements PullRequest {
     pullNumber: number,
     excludeFilePatterns: string[]
   ): Effect.Effect<PullRequestFile[], UnknownException, InstanceType<typeof GitHub>> => {
-    core.info("Step11: Fetching files for review."); // Debug statement
     const program = octokitTag.pipe(
       Effect.flatMap(octokit =>
         Effect.retry(
-          Effect.tryPromise(() => {
-            core.info(`Step11.1: Sending request to list files for pull request #${pullNumber}.`); // Debug statement
-            return octokit.rest.pulls.listFiles({ owner, repo, pull_number: pullNumber, per_page: 100 });
-          }),
+          Effect.tryPromise(() =>
+            octokit.rest.pulls.listFiles({ owner, repo, pull_number: pullNumber, per_page: 100 })
+          ),
           exponentialBackoffWithJitter(3)
         )
       ),
       Effect.tap(pullRequestFiles =>
-        Effect.sync(() => {
-          core.info(`Step11.2: Received ${pullRequestFiles.data.length} files for review.`); // Debug statement
-        })
+        Effect.sync(() =>
+          core.info(
+            `Original files for review ${pullRequestFiles.data.length}: ${pullRequestFiles.data.map(_ => _.filename)}`
+          )
+        )
       ),
       Effect.flatMap(pullRequestFiles =>
-        Effect.sync(() => {
-          core.info("Step11.3: Filtering files based on exclude patterns."); // Debug statement
-          return pullRequestFiles.data.filter(file => {
+        Effect.sync(() =>
+          pullRequestFiles.data.filter(file => {
             return (
               excludeFilePatterns.every(pattern => !minimatch(file.filename, pattern, { matchBase: true })) &&
               (file.status === 'modified' || file.status === 'added' || file.status === 'changed')
-            );
-          });
-        })
+            )
+          })
+        )
       ),
       Effect.tap(filteredFiles =>
-        Effect.sync(() => {
-          core.info(`Step11.4: Filtered files count: ${filteredFiles.length}.`); // Debug statement
-        })
+        Effect.sync(() =>
+          core.info(`Filtered files for review ${filteredFiles.length}: ${filteredFiles.map(_ => _.filename)}`)
+        )
       )
-    );
+    )
 
-    return program;
+    return program
   }
 
   createReviewComment = (
     requestOptions: CreateReviewCommentRequest
   ): Effect.Effect<void, Error, InstanceType<typeof GitHub>> =>
     octokitTag.pipe(
-      Effect.tap(_ => {
-        core.info("Step10: Preparing to create review comment."); // Debug statement
-        core.info(`Step10.1: Request options: ${JSON.stringify(requestOptions)}`); // Debug statement
-      }),
+      Effect.tap(_ => core.debug(`Creating review comment: ${JSON.stringify(requestOptions)}`)),
       Effect.flatMap(octokit =>
         Effect.retry(
-          Effect.tryPromise(() => {
-            core.info("Step10.2: Sending request to create review comment."); // Debug statement
-            return octokit.rest.pulls.createReviewComment(requestOptions);
-          }),
+          Effect.tryPromise(() => octokit.rest.pulls.createReviewComment(requestOptions)),
           exponentialBackoffWithJitter(3)
         )
       )
@@ -149,34 +141,38 @@ export interface CodeReview {
 export const CodeReview = Context.GenericTag<CodeReview>('CodeReview')
 
 export class CodeReviewClass implements CodeReview {
-    private llm: BaseChatModel
-    private chatPrompt: ChatPromptTemplate
-    private chain: LLMChain<string>
+  private llm: BaseChatModel
+  private chatPrompt = ChatPromptTemplate.fromPromptMessages([
+    SystemMessagePromptTemplate.fromTemplate(
+      systemPrompt
+    ),
+    HumanMessagePromptTemplate.fromTemplate(instructionsPrompt)
+  ])
 
-    constructor(llm: BaseChatModel) {
-        this.llm = llm
-        this.chatPrompt = ChatPromptTemplate.fromPromptMessages([
-            SystemMessagePromptTemplate.fromTemplate(systemPrompt),
-            HumanMessagePromptTemplate.fromTemplate(instructionsPrompt)
-        ])
-        this.chain = new LLMChain({
-            prompt: this.chatPrompt,
-            llm: this.llm
-        })
-    }
+  private chain: LLMChain<string>
 
-    codeReviewFor = (
-        file: PullRequestFile
-    ): Effect.Effect<ChainValues, NoSuchElementException | UnknownException, DetectLanguage> =>
-        DetectLanguage.pipe(
-            Effect.flatMap(DetectLanguage => DetectLanguage.detectLanguage(file.filename)),
-            Effect.flatMap(lang =>
-                Effect.retry(
-                    Effect.tryPromise(() => this.chain.call({ lang, diff: file.patch })),
-                    exponentialBackoffWithJitter(3)
-                )
-            )
+  constructor(llm: BaseChatModel) {
+    this.llm = llm
+    this.chain = new LLMChain({
+      prompt: this.chatPrompt,
+      llm: this.llm
+    })
+  }
+
+  codeReviewFor = (
+    file: PullRequestFile
+  ): Effect.Effect<ChainValues, NoSuchElementException | UnknownException, DetectLanguage> =>
+    DetectLanguage.pipe(
+      Effect.flatMap(DetectLanguage => DetectLanguage.detectLanguage(file.filename)),
+      Effect.flatMap(lang =>
+        Effect.retry(
+          Effect.tryPromise(() => this.chain.call({ lang, diff: file.patch })),
+          exponentialBackoffWithJitter(3)
         )
+      )
+    )
+
+
 }
 
 export type ArrElement<ArrType> = ArrType extends readonly (infer ElementType)[] ? ElementType : never
