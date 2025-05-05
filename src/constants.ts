@@ -62,7 +62,7 @@ export const extensionToLanguageMap: Record<LanguageKey, string> = {
   other: ""
 }
 
-export const systemPrompt = 'Act as an empathetic software engineer who is an expert in designing and developing .NET and C# based applications and APIs by adhering to best practices of software architecture.'
+export const systemPrompt = 'Act as an empathetic software engineer who is an expert in designing and developing Java and Springboot based applications by adhering to best practices of software architecture.'
 
 export const instructionsPromptPrefix = `Your task is to review a Pull Request. You will receive a git diff.
 Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities. Check it adheres to the following coding standards and guidelines:`
