@@ -34,6 +34,9 @@ export const run = async (): Promise<void> => {
 
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
     const instructionsPrompt = instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix;
+    core.info(`instructionsPromptPrefix: ${instructionsPromptPrefix}`);
+    core.info(`instructionsPromptMid: ${instructionsPromptMid}`);
+    core.info(`instructionsPromptSuffix: ${instructionsPromptSuffix}`);
 
     const model: BaseChatModel = new ChatOpenAI({
         temperature,
