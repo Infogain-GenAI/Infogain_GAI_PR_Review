@@ -49753,10 +49753,7 @@ const run = async () => {
     const { owner, repo } = context.repo;
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken);
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
-    const instructionsPrompt = _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk + instructionsPromptMid + _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r;
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`instructionsPromptPrefix: ${_constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk}`);
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`instructionsPromptMid: ${instructionsPromptMid}`);
-    _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`instructionsPromptSuffix: ${_constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r}`);
+    const instructionsPrompt = '`' + _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk + instructionsPromptMid + _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r + '`';
     const model = new langchain_chat_models__WEBPACK_IMPORTED_MODULE_3__/* .ChatOpenAI */ .z7({
         temperature,
         openAIApiKey,
