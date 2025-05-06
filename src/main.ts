@@ -33,7 +33,7 @@ export const run = async (): Promise<void> => {
     const octokit = github.getOctokit(githubToken);
 
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
-    const instructionsPrompt = '`'+instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix+'`';
+    const instructionsPrompt = instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix;
 
     const model: BaseChatModel = new ChatOpenAI({
         temperature,
@@ -107,6 +107,7 @@ export const run = async (): Promise<void> => {
     );
 
     const runnable = Effect.provide(program, MainLive);
+
     const result = await Effect.runPromiseExit(runnable);
 
     if (Exit.isFailure(result)) {

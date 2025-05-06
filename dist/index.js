@@ -44129,8 +44129,7 @@ const extensionToLanguageMap = {
     pssc: "",
     other: ""
 };
-const systemPrompt = `Act as an empathetic software engineer who is an expert in designing and developing
- .NET and C Sharp based applications and APIs by adhering to best practices of software architecture.`;
+const systemPrompt = 'Act as an empathetic software engineer who is an expert in designing and developing .NET and C Sharp based applications and APIs by adhering to best practices of software architecture.';
 const instructionsPromptPrefix = `Your task is to review a Pull Request. You will receive a git diff.
 Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities. Check it adheres to the following coding standards and guidelines:`;
 const instructionsPromptSuffix = `Write your reply and examples in GitHub Markdown format.
@@ -49754,7 +49753,7 @@ const run = async () => {
     const { owner, repo } = context.repo;
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken);
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
-    const instructionsPrompt = '`' + _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk + instructionsPromptMid + _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r + '`';
+    const instructionsPrompt = _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk + instructionsPromptMid + _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r;
     const model = new langchain_chat_models__WEBPACK_IMPORTED_MODULE_3__/* .ChatOpenAI */ .z7({
         temperature,
         openAIApiKey,
