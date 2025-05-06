@@ -44131,7 +44131,7 @@ const extensionToLanguageMap = {
 };
 const systemPrompt = 'Act as an empathetic software engineer who is an expert in designing and developing .NET and C Sharp based applications and APIs by adhering to best practices of software architecture.';
 const instructionsPromptPrefix = `Your task is to review a Pull Request. You will receive a git diff.
-Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities. Check it adheres to the following coding standards and guidelines:`;
+Review it and suggest any improvements in code quality, maintainability, readability, performance, security, etc. Identify any potential bugs or security vulnerabilities.  Check it adheres to the following coding standards and guidelines, and share your feedback ONLY for the guidelines which are not adhered:`;
 const instructionsPromptSuffix = `Write your reply and examples in GitHub Markdown format.
 The programming language in the git diff is {lang}.
     git diff to review
