@@ -25,7 +25,10 @@ inputs:
     description: 'Path to the instructions file'
     required: false
     default: ''
-
+  persona_languages:
+    description: 'Developer persona languages to use for code review'
+    required: false
+    default: ''
 
 runs:
   using: 'node20'

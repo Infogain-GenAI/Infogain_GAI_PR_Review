@@ -2,7 +2,7 @@ import { GitHub } from '@actions/github/lib/utils.js'
 import type { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods/dist-types/generated/parameters-and-response-types.js'
 import { minimatch } from 'minimatch'
 import * as core from '@actions/core'
-import {systemPrompt,extensionToLanguageMap, instructionsPromptPrefix, instructionsPromptSuffix} from './constants.js'
+import {extensionToLanguageMap} from './constants.js'
 import { Effect, Context, Option, Layer, Schedule } from 'effect'
 import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from 'langchain/prompts'
 import {LLMChain} from 'langchain/chains'
@@ -145,12 +145,14 @@ export class CodeReviewClass implements CodeReview {
     private chatPrompt: ChatPromptTemplate
     private chain: LLMChain<string>
     private instructionsPrompt: string
+    private systemPrompt: string
 
-    constructor(llm: BaseChatModel, instructionsPrompt: string) {
+    constructor(llm: BaseChatModel, instructionsPrompt: string, systemPrompt: string ) {
         this.llm = llm
         this.instructionsPrompt = instructionsPrompt
+        this.systemPrompt = systemPrompt
         this.chatPrompt = ChatPromptTemplate.fromPromptMessages([
-            SystemMessagePromptTemplate.fromTemplate(systemPrompt),
+            SystemMessagePromptTemplate.fromTemplate(this.systemPrompt),
             HumanMessagePromptTemplate.fromTemplate(this.instructionsPrompt)
         ])
         this.chain = new LLMChain({

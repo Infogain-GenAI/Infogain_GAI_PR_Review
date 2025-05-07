@@ -6,7 +6,7 @@ import { ChatOpenAI } from 'langchain/chat_models'
 import { BaseChatModel } from 'langchain/chat_models'
 import { Effect, Layer, Match, pipe, Exit } from 'effect'
 import { CodeReview, CodeReviewClass, DetectLanguage, octokitTag, PullRequest, PullRequestClass } from './helpers.js'
-import {instructionsPromptPrefix,instructionsPromptSuffix} from './constants.js'
+import {instructionsPromptPrefix,instructionsPromptSuffix,systemPromptWithLanguages} from './constants.js'
 
 config()
 let isBlockExecuted = false; // Flag to ensure the block runs only once
@@ -22,6 +22,7 @@ export const run = async (): Promise<void> => {
     const modelName = core.getInput('model_name');
     const temperature = parseInt(core.getInput('model_temperature'));
     const instructionsFilePath = core.getInput('instructions_file_path');
+    const personaLanguages = core.getInput('persona_languages');
 
     if (!githubToken) {
         core.setFailed('GitHub token is missing. Exiting.');
@@ -34,13 +35,14 @@ export const run = async (): Promise<void> => {
 
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
     const instructionsPrompt = instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix;
+    const systemPrompt = systemPromptWithLanguages.replace('{persona_languages}', personaLanguages);
 
     const model: BaseChatModel = new ChatOpenAI({
         temperature,
         openAIApiKey,
         modelName,
     });
-    const MainLive = init(model, githubToken, instructionsPrompt);
+    const MainLive = init(model, githubToken, instructionsPrompt, systemPrompt);
 
     const program = Match.value(context.eventName).pipe(
         Match.when('pull_request', () => {
@@ -139,10 +141,10 @@ const fetchInstructionsPrompt = async (
         }
 };
 
-const init = (model: BaseChatModel, githubToken: string, instructionsPrompt: string) => {
+const init = (model: BaseChatModel, githubToken: string, instructionsPrompt: string, systemPrompt: string) => {
     const CodeReviewLive = Layer.effect(
         CodeReview,
-        Effect.map(DetectLanguage, _ => CodeReview.of(new CodeReviewClass(model, instructionsPrompt)))
+        Effect.map(DetectLanguage, _ => CodeReview.of(new CodeReviewClass(model, instructionsPrompt, systemPrompt)))
     )
 
     const octokitLive = Layer.succeed(octokitTag, github.getOctokit(githubToken))

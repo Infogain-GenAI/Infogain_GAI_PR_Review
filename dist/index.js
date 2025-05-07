@@ -44063,8 +44063,8 @@ function wrappy (fn, cb) {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "G0": () => (/* binding */ extensionToLanguageMap),
-/* harmony export */   "UT": () => (/* binding */ systemPrompt),
 /* harmony export */   "_r": () => (/* binding */ instructionsPromptSuffix),
+/* harmony export */   "fi": () => (/* binding */ systemPromptWithLanguages),
 /* harmony export */   "jk": () => (/* binding */ instructionsPromptPrefix)
 /* harmony export */ });
 const extensionToLanguageMap = {
@@ -44129,7 +44129,8 @@ const extensionToLanguageMap = {
     pssc: "",
     other: ""
 };
-const systemPrompt = 'Act as an empathetic software engineer who is an expert in designing and developing .NET and C Sharp based applications and APIs by adhering to best practices of software architecture.';
+const systemPromptWithLanguages = `Act as an empathetic software engineer who is an expert in designing and developing
+{persona_languages} based applications and APIs by adhering to best practices of software architecture.`;
 const instructionsPromptPrefix = `Your task is to review a Pull Request. You will receive a git diff.
 Review it and suggest any based on the below coding standards and guidelines, and share your suggestions and code changes only for the guidelines which are not followed:`;
 const instructionsPromptSuffix = `Write your reply and examples in GitHub Markdown format.
@@ -49664,11 +49665,13 @@ class CodeReviewClass {
     chatPrompt;
     chain;
     instructionsPrompt;
-    constructor(llm, instructionsPrompt) {
+    systemPrompt;
+    constructor(llm, instructionsPrompt, systemPrompt) {
         this.llm = llm;
         this.instructionsPrompt = instructionsPrompt;
+        this.systemPrompt = systemPrompt;
         this.chatPrompt = prompts/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages([
-            prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(constants/* systemPrompt */.UT),
+            prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(this.systemPrompt),
             prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(this.instructionsPrompt)
         ]);
         this.chain = new llm_chain.LLMChain({
@@ -49745,6 +49748,7 @@ const run = async () => {
     const modelName = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('model_name');
     const temperature = parseInt(_actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('model_temperature'));
     const instructionsFilePath = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('instructions_file_path');
+    const personaLanguages = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('persona_languages');
     if (!githubToken) {
         _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed('GitHub token is missing. Exiting.');
         return;
@@ -49754,12 +49758,13 @@ const run = async () => {
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken);
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
     const instructionsPrompt = _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk + instructionsPromptMid + _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r;
+    const systemPrompt = _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .systemPromptWithLanguages.replace */ .fi.replace('{persona_languages}', personaLanguages);
     const model = new langchain_chat_models__WEBPACK_IMPORTED_MODULE_3__/* .ChatOpenAI */ .z7({
         temperature,
         openAIApiKey,
         modelName,
     });
-    const MainLive = init(model, githubToken, instructionsPrompt);
+    const MainLive = init(model, githubToken, instructionsPrompt, systemPrompt);
     const program = effect__WEBPACK_IMPORTED_MODULE_6__/* .value */ .S3(context.eventName).pipe(effect__WEBPACK_IMPORTED_MODULE_6__/* .when */ .gx('pull_request', () => {
         const excludeFilePatterns = (0,effect__WEBPACK_IMPORTED_MODULE_7__/* .pipe */ .zG)(effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => _actions_github__WEBPACK_IMPORTED_MODULE_2__.context.payload), effect__WEBPACK_IMPORTED_MODULE_8__/* .tap */ .bwX(pullRequestPayload => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => {
             _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`repoName: ${repo}, pull_number: ${context.payload.number}, owner: ${owner}, sha: ${pullRequestPayload.pull_request.head.sha}`);
@@ -49812,8 +49817,8 @@ const fetchInstructionsPrompt = async (octokit, owner, repo, filePath) => {
         return '';
     }
 };
-const init = (model, githubToken, instructionsPrompt) => {
-    const CodeReviewLive = effect__WEBPACK_IMPORTED_MODULE_10__/* .effect */ .cE(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview */ .OD, effect__WEBPACK_IMPORTED_MODULE_8__/* .map */ .UID(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage */ .oh, _ => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.of */ .OD.of(new _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReviewClass */ .Pr(model, instructionsPrompt))));
+const init = (model, githubToken, instructionsPrompt, systemPrompt) => {
+    const CodeReviewLive = effect__WEBPACK_IMPORTED_MODULE_10__/* .effect */ .cE(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview */ .OD, effect__WEBPACK_IMPORTED_MODULE_8__/* .map */ .UID(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage */ .oh, _ => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.of */ .OD.of(new _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReviewClass */ .Pr(model, instructionsPrompt, systemPrompt))));
     const octokitLive = effect__WEBPACK_IMPORTED_MODULE_10__/* .succeed */ .ng(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .octokitTag */ .sK, _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken));
     const PullRequestLive = effect__WEBPACK_IMPORTED_MODULE_10__/* .effect */ .cE(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest */ .i7, effect__WEBPACK_IMPORTED_MODULE_8__/* .map */ .UID(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .octokitTag */ .sK, _ => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.of */ .i7.of(new _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequestClass */ .TC())));
     const mainLive = CodeReviewLive.pipe(effect__WEBPACK_IMPORTED_MODULE_10__/* .merge */ .TS(PullRequestLive), effect__WEBPACK_IMPORTED_MODULE_10__/* .merge */ .TS(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage.Live */ .oh.Live), effect__WEBPACK_IMPORTED_MODULE_10__/* .merge */ .TS(octokitLive), effect__WEBPACK_IMPORTED_MODULE_10__/* .provide */ .JJ(_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .DetectLanguage.Live */ .oh.Live), effect__WEBPACK_IMPORTED_MODULE_10__/* .provide */ .JJ(octokitLive));
