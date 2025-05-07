@@ -49670,6 +49670,7 @@ class CodeReviewClass {
         this.llm = llm;
         this.instructionsPrompt = instructionsPrompt;
         this.systemPrompt = systemPrompt;
+        core.info(`System prompt: ${this.systemPrompt}`);
         this.chatPrompt = prompts/* ChatPromptTemplate.fromPromptMessages */.ks.fromPromptMessages([
             prompts/* SystemMessagePromptTemplate.fromTemplate */.ov.fromTemplate(this.systemPrompt),
             prompts/* HumanMessagePromptTemplate.fromTemplate */.kq.fromTemplate(this.instructionsPrompt)

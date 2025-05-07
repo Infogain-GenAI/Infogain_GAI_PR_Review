@@ -151,6 +151,7 @@ export class CodeReviewClass implements CodeReview {
         this.llm = llm
         this.instructionsPrompt = instructionsPrompt
         this.systemPrompt = systemPrompt
+        core.info(`System prompt: ${this.systemPrompt}`)
         this.chatPrompt = ChatPromptTemplate.fromPromptMessages([
             SystemMessagePromptTemplate.fromTemplate(this.systemPrompt),
             HumanMessagePromptTemplate.fromTemplate(this.instructionsPrompt)
