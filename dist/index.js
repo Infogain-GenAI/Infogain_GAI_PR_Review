@@ -49808,8 +49808,10 @@ const run = async () => {
     const { owner, repo } = context.repo;
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken);
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
-    //const instructionsPrompt = instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix;
-    const instructionsPrompt = `${_constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk}${instructionsPromptMid}${_constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r}`;
+    const escapedInstructionsPromptMid = instructionsPromptMid
+        .replace(/{/g, '{{') // Escape opening curly braces
+        .replace(/}/g, '}}'); // Escape closing curly braces
+    const instructionsPrompt = `${_constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk}${escapedInstructionsPromptMid}${_constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r}`;
     const systemPrompt = (0,_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .getSystemPrompt */ .vG)(systemProfile);
     const model = new langchain_chat_models__WEBPACK_IMPORTED_MODULE_3__/* .ChatOpenAI */ .z7({
         temperature,

@@ -34,8 +34,11 @@ export const run = async (): Promise<void> => {
     const octokit = github.getOctokit(githubToken);
 
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
-    //const instructionsPrompt = instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix;
-    const instructionsPrompt = `${instructionsPromptPrefix}${instructionsPromptMid}${instructionsPromptSuffix}`;
+    const escapedInstructionsPromptMid = instructionsPromptMid
+        .replace(/{/g, '{{') // Escape opening curly braces
+        .replace(/}/g, '}}'); // Escape closing curly braces
+
+    const instructionsPrompt = `${instructionsPromptPrefix}${escapedInstructionsPromptMid}${instructionsPromptSuffix}`;
     const systemPrompt = getSystemPrompt(systemProfile)
 
     const model: BaseChatModel = new ChatOpenAI({
