@@ -62,8 +62,29 @@ export const extensionToLanguageMap: Record<LanguageKey, string> = {
   other: ""
 }
 
-export const systemPromptWithLanguages = `Act as an empathetic software engineer who is an expert in designing and developing
-{persona_languages} based applications and APIs by adhering to best practices of software architecture.`
+export const systemPromptDotNetReviewer = `Act as an empathetic software engineer who is an expert in designing and developing
+.NET and C sharp based applications and APIs by adhering to best practices of software architecture.`
+
+export const systemPromptJavaReviewer = `Act as an empathetic software engineer who is an expert in designing and developing
+Java and SpringBoot based applications and APIs by adhering to best practices of software architecture.`
+
+export const systemPromptReactReduxReviewer = `Act as an empathetic software engineer who is an expert in designing and developing
+React and Redux based applications and APIs by adhering to best practices of software architecture.`
+
+export const systemPromptPythonReviewer = `Act as an empathetic software engineer who is an expert in designing and developing
+Python applications and APIs by adhering to best practices of software architecture.`
+
+export const systemPromptTypeScriptReviewer = `Act as an empathetic software engineer who is an expert in designing and developing
+Typescript based applications and APIs by adhering to best practices of software architecture.`
+
+export const systemPromptSecurityScannerCSharp = `Act as an empathetic advisory agent who is an expert in static ananlysis and reviews C# (.NET) code for
+security vulnerabilities, misconfigurations, and insecure coding practices.`
+
+export const systemPromptSecurityScannerJava = `Act as an empathetic advisory agent who is an expert in static ananlysis and reviews Java code for
+security vulnerabilities, misconfigurations, and insecure coding practices.`
+
+export const systemPromptSecurityScannerPython = `Act as an empathetic advisory agent who is an expert in static ananlysis and reviews Python code for
+security vulnerabilities, misconfigurations, and insecure coding practices.`
 
 export const instructionsPromptPrefix = `Your task is to review a Pull Request. You will receive a git diff.
 Review it and suggest any based on the below coding standards and guidelines, and share your suggestions and code changes only for the guidelines which are not followed:`

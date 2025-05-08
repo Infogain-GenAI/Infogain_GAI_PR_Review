@@ -25,8 +25,8 @@ inputs:
     description: 'Path to the instructions file'
     required: false
     default: ''
-  persona_languages:
-    description: 'Developer persona languages to use for code review'
+  system_profile:
+    description: 'Profile for the system prompt'
     required: false
     default: ''
 

@@ -11,6 +11,36 @@ import type { ChainValues } from 'langchain/schema'
 import parseDiff from 'parse-diff'
 import { NoSuchElementException, UnknownException } from 'effect/Cause'
 import { constant } from 'effect/Function'
+import { systemPromptDotNetReviewer, systemPromptJavaReviewer, systemPromptReactReduxReviewer, systemPromptPythonReviewer,
+    systemPromptTypeScriptReviewer, systemPromptSecurityScannerCSharp, systemPromptSecurityScannerJava, systemPromptSecurityScannerPython } from './constants.js'
+
+/**
+ * Returns the corresponding systemPrompt based on the given systemProfile.
+ * @param systemProfile - The profile name (e.g., 'dotnet', 'java', 'react-redux').
+ * @returns The corresponding systemPrompt string.
+ */
+export const getSystemPrompt = (systemProfile: string): string => {
+    switch (systemProfile.toLowerCase()) {
+        case 'dot_net_reviewer':
+            return systemPromptDotNetReviewer;
+        case 'java_reviewer':
+            return systemPromptJavaReviewer;
+        case 'react_redux_reviewer':
+            return systemPromptReactReduxReviewer;
+        case 'python_reviewer':
+              return systemPromptPythonReviewer;
+        case 'typescript_reviewer':
+              return systemPromptTypeScriptReviewer;
+        case 'security_scanner_csharp':
+            return systemPromptSecurityScannerCSharp;
+        case 'security_scanner_java':
+            return systemPromptSecurityScannerJava;
+        case 'security_scanner_python':
+              return systemPromptSecurityScannerPython;
+        default:
+            throw new Error(`Unsupported system profile: ${systemProfile}`);
+    }
+};
 
 export type PullRequestFileResponse = RestEndpointMethodTypes['pulls']['listFiles']['response']
 

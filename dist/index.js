@@ -44062,10 +44062,17 @@ function wrappy (fn, cb) {
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "DO": () => (/* binding */ systemPromptSecurityScannerPython),
+/* harmony export */   "Ec": () => (/* binding */ systemPromptTypeScriptReviewer),
+/* harmony export */   "F$": () => (/* binding */ systemPromptJavaReviewer),
 /* harmony export */   "G0": () => (/* binding */ extensionToLanguageMap),
+/* harmony export */   "_Q": () => (/* binding */ systemPromptReactReduxReviewer),
 /* harmony export */   "_r": () => (/* binding */ instructionsPromptSuffix),
-/* harmony export */   "fi": () => (/* binding */ systemPromptWithLanguages),
-/* harmony export */   "jk": () => (/* binding */ instructionsPromptPrefix)
+/* harmony export */   "aO": () => (/* binding */ systemPromptSecurityScannerCSharp),
+/* harmony export */   "at": () => (/* binding */ systemPromptPythonReviewer),
+/* harmony export */   "jk": () => (/* binding */ instructionsPromptPrefix),
+/* harmony export */   "m0": () => (/* binding */ systemPromptSecurityScannerJava),
+/* harmony export */   "tf": () => (/* binding */ systemPromptDotNetReviewer)
 /* harmony export */ });
 const extensionToLanguageMap = {
     js: 'javascript',
@@ -44129,8 +44136,22 @@ const extensionToLanguageMap = {
     pssc: "",
     other: ""
 };
-const systemPromptWithLanguages = `Act as an empathetic software engineer who is an expert in designing and developing
-{persona_languages} based applications and APIs by adhering to best practices of software architecture.`;
+const systemPromptDotNetReviewer = `Act as an empathetic software engineer who is an expert in designing and developing
+.NET and C sharp based applications and APIs by adhering to best practices of software architecture.`;
+const systemPromptJavaReviewer = `Act as an empathetic software engineer who is an expert in designing and developing
+Java and SpringBoot based applications and APIs by adhering to best practices of software architecture.`;
+const systemPromptReactReduxReviewer = `Act as an empathetic software engineer who is an expert in designing and developing
+React and Redux based applications and APIs by adhering to best practices of software architecture.`;
+const systemPromptPythonReviewer = `Act as an empathetic software engineer who is an expert in designing and developing
+Python applications and APIs by adhering to best practices of software architecture.`;
+const systemPromptTypeScriptReviewer = `Act as an empathetic software engineer who is an expert in designing and developing
+Typescript based applications and APIs by adhering to best practices of software architecture.`;
+const systemPromptSecurityScannerCSharp = `Act as an empathetic advisory agent who is an expert in static ananlysis and reviews C# (.NET) code for
+security vulnerabilities, misconfigurations, and insecure coding practices.`;
+const systemPromptSecurityScannerJava = `Act as an empathetic advisory agent who is an expert in static ananlysis and reviews Java code for
+security vulnerabilities, misconfigurations, and insecure coding practices.`;
+const systemPromptSecurityScannerPython = `Act as an empathetic advisory agent who is an expert in static ananlysis and reviews Python code for
+security vulnerabilities, misconfigurations, and insecure coding practices.`;
 const instructionsPromptPrefix = `Your task is to review a Pull Request. You will receive a git diff.
 Review it and suggest any based on the below coding standards and guidelines, and share your suggestions and code changes only for the guidelines which are not followed:`;
 const instructionsPromptSuffix = `Write your reply and examples in GitHub Markdown format.
@@ -44152,6 +44173,7 @@ __nccwpck_require__.d(__webpack_exports__, {
   "oh": () => (/* binding */ DetectLanguage),
   "i7": () => (/* binding */ PullRequest),
   "TC": () => (/* binding */ PullRequestClass),
+  "vG": () => (/* binding */ getSystemPrompt),
   "sK": () => (/* binding */ octokitTag)
 });
 
@@ -49631,6 +49653,34 @@ class MultiRetrievalQAChain extends (/* unused pure expression or super */ null 
 
 
 
+
+/**
+ * Returns the corresponding systemPrompt based on the given systemProfile.
+ * @param systemProfile - The profile name (e.g., 'dotnet', 'java', 'react-redux').
+ * @returns The corresponding systemPrompt string.
+ */
+const getSystemPrompt = (systemProfile) => {
+    switch (systemProfile.toLowerCase()) {
+        case 'dot_net_reviewer':
+            return constants/* systemPromptDotNetReviewer */.tf;
+        case 'java_reviewer':
+            return constants/* systemPromptJavaReviewer */.F$;
+        case 'react_redux_reviewer':
+            return constants/* systemPromptReactReduxReviewer */._Q;
+        case 'python_reviewer':
+            return constants/* systemPromptPythonReviewer */.at;
+        case 'typescript_reviewer':
+            return constants/* systemPromptTypeScriptReviewer */.Ec;
+        case 'security_scanner_csharp':
+            return constants/* systemPromptSecurityScannerCSharp */.aO;
+        case 'security_scanner_java':
+            return constants/* systemPromptSecurityScannerJava */.m0;
+        case 'security_scanner_python':
+            return constants/* systemPromptSecurityScannerPython */.DO;
+        default:
+            throw new Error(`Unsupported system profile: ${systemProfile}`);
+    }
+};
 const octokitTag = Context/* GenericTag */.hV('octokit');
 const PullRequest = Context/* GenericTag */.hV('PullRequest');
 class PullRequestClass {
@@ -49749,7 +49799,7 @@ const run = async () => {
     const modelName = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('model_name');
     const temperature = parseInt(_actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('model_temperature'));
     const instructionsFilePath = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('instructions_file_path');
-    const personaLanguages = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('persona_languages');
+    const systemProfile = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('system_profile');
     if (!githubToken) {
         _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed('GitHub token is missing. Exiting.');
         return;
@@ -49758,8 +49808,9 @@ const run = async () => {
     const { owner, repo } = context.repo;
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_2__.getOctokit(githubToken);
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
-    const instructionsPrompt = _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk + instructionsPromptMid + _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r;
-    const systemPrompt = _constants_js__WEBPACK_IMPORTED_MODULE_5__/* .systemPromptWithLanguages.replace */ .fi.replace('{persona_languages}', personaLanguages);
+    //const instructionsPrompt = instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix;
+    const instructionsPrompt = `${_constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptPrefix */ .jk}${instructionsPromptMid}${_constants_js__WEBPACK_IMPORTED_MODULE_5__/* .instructionsPromptSuffix */ ._r}`;
+    const systemPrompt = (0,_helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .getSystemPrompt */ .vG)(systemProfile);
     const model = new langchain_chat_models__WEBPACK_IMPORTED_MODULE_3__/* .ChatOpenAI */ .z7({
         temperature,
         openAIApiKey,

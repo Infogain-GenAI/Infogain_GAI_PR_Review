@@ -5,8 +5,8 @@ import type { PullRequestEvent } from '@octokit/webhooks-definitions/schema.js'
 import { ChatOpenAI } from 'langchain/chat_models'
 import { BaseChatModel } from 'langchain/chat_models'
 import { Effect, Layer, Match, pipe, Exit } from 'effect'
-import { CodeReview, CodeReviewClass, DetectLanguage, octokitTag, PullRequest, PullRequestClass } from './helpers.js'
-import {instructionsPromptPrefix,instructionsPromptSuffix,systemPromptWithLanguages} from './constants.js'
+import { CodeReview, CodeReviewClass, DetectLanguage, octokitTag, PullRequest, PullRequestClass, getSystemPrompt } from './helpers.js'
+import {instructionsPromptPrefix,instructionsPromptSuffix} from './constants.js'
 
 config()
 let isBlockExecuted = false; // Flag to ensure the block runs only once
@@ -22,7 +22,7 @@ export const run = async (): Promise<void> => {
     const modelName = core.getInput('model_name');
     const temperature = parseInt(core.getInput('model_temperature'));
     const instructionsFilePath = core.getInput('instructions_file_path');
-    const personaLanguages = core.getInput('persona_languages');
+    const systemProfile = core.getInput('system_profile');
 
     if (!githubToken) {
         core.setFailed('GitHub token is missing. Exiting.');
@@ -34,8 +34,9 @@ export const run = async (): Promise<void> => {
     const octokit = github.getOctokit(githubToken);
 
     const instructionsPromptMid = await fetchInstructionsPrompt(octokit, owner, repo, instructionsFilePath);
-    const instructionsPrompt = instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix;
-    const systemPrompt = systemPromptWithLanguages.replace('{persona_languages}', personaLanguages);
+    //const instructionsPrompt = instructionsPromptPrefix + instructionsPromptMid + instructionsPromptSuffix;
+    const instructionsPrompt = `${instructionsPromptPrefix}${instructionsPromptMid}${instructionsPromptSuffix}`;
+    const systemPrompt = getSystemPrompt(systemProfile)
 
     const model: BaseChatModel = new ChatOpenAI({
         temperature,
