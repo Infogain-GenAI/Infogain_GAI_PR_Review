@@ -29,6 +29,10 @@ inputs:
     description: 'Profile for the system prompt'
     required: false
     default: ''
+  pr_number:
+    description: 'Pull Request Number'
+    required: false
+    default: ''
 
 runs:
   using: 'node20'
