@@ -105,6 +105,71 @@ export const run = async (): Promise<void> => {
             return a;
         }),
 
+        // for manual review, given a PR number
+        // the commit id is derived from the PR number using getPullRequestCommitId
+        Match.when('workflow_dispatch', () => {
+            const prNumber = parseInt(core.getInput('pr_number'))   //Pr Number from API input
+
+            const excludeFilePatterns = pipe(
+                Effect.sync(() => github.context.payload as PullRequestEvent),
+                Effect.tap(pullRequestPayload =>
+                    Effect.sync(() => {
+                        core.info(
+                            `repoName: ${repo}, pull_number: ${prNumber}, owner: ${owner}`
+                        );
+                    })
+                ),
+                Effect.map(() =>
+                    core
+                        .getInput('exclude_files')
+                        .split(',')
+                        .map(_ => _.trim())
+                )
+            );
+
+            const a = PullRequest.pipe(
+                Effect.flatMap(PullRequest =>
+                                    PullRequest.getPullRequestCommitId(owner, repo, prNumber) ),
+                    Effect.flatMap(preqCommitId =>
+                    excludeFilePatterns.pipe(
+                        Effect.flatMap(filePatterns =>
+                            PullRequest.pipe(
+                                Effect.flatMap(PullRequest => {
+                                    return PullRequest.getFilesForReview(owner, repo, prNumber, filePatterns);
+                                }),
+                                Effect.flatMap(files => {
+                                    return Effect.sync(() => files.filter(file => file.patch !== undefined));
+                                }),
+                                Effect.flatMap(files =>
+                            Effect.forEach(files, file => {
+                                return CodeReview.pipe(
+                                    Effect.flatMap(CodeReview => CodeReview.codeReviewFor(file)),
+                                    Effect.flatMap(res => {
+                                        return PullRequest.pipe(
+                                            Effect.flatMap(PullRequest =>
+                                                PullRequest.createReviewComment({
+                                                    repo,
+                                                    owner,
+                                                    pull_number: prNumber,
+                                                    commit_id: preqCommitId as string,
+                                                    path: file.filename,
+                                                    body: res.text,
+                                                    subject_type: 'file'
+                                                })
+                                            )
+                                        );
+                                    })
+                                );
+                            })
+                        )
+                    )
+                )
+                    )
+                )
+            );
+            return a;
+        }),
+
         Match.orElse(eventName =>
             Effect.sync(() => {
                 core.setFailed(`Unsupported event. Got: ${eventName}`); // Debug statement

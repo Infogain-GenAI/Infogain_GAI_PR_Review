@@ -48,6 +48,7 @@ export type PullRequestFile = ArrElement<PullRequestFileResponse['data']>
 type CreateReviewCommentRequest = RestEndpointMethodTypes['pulls']['createReviewComment']['parameters']
 
 type CreateReviewRequest = RestEndpointMethodTypes['pulls']['createReview']['parameters']
+export type prCommitId = string | null
 
 export interface PullRequest {
   getFilesForReview: (
@@ -60,6 +61,11 @@ export interface PullRequest {
     requestOptions: CreateReviewCommentRequest
   ) => Effect.Effect<void, unknown, InstanceType<typeof GitHub>>
   createReview: (requestOptions: CreateReviewRequest) => Effect.Effect<void, unknown, InstanceType<typeof GitHub>>
+  getPullRequestCommitId: (
+    owner: string,
+    repo: string,
+    pull_number: number
+  ) => Effect.Effect<prCommitId, UnknownException, InstanceType<typeof GitHub>>
 }
 
 export const octokitTag = Context.GenericTag<InstanceType<typeof GitHub>>('octokit')
@@ -130,8 +136,26 @@ export class PullRequestClass implements PullRequest {
         )
       )
     )
-}
 
+    getPullRequestCommitId = (
+    owner: string,
+    repo: string,
+    pull_number: number
+  ): Effect.Effect<prCommitId, UnknownException, InstanceType<typeof GitHub>> => {
+    const commitid = octokitTag.pipe(
+      Effect.flatMap(octokit =>
+        Effect.retry(
+          Effect.tryPromise(() => octokit.rest.pulls.get({ owner, repo, pull_number })).pipe(
+            Effect.map(response => response.data.head.sha)
+          ),
+          exponentialBackoffWithJitter(3)
+        )
+      )
+    )
+    return commitid
+  }
+
+}
 
 
 const LanguageDetection = Effect.sync(() => {

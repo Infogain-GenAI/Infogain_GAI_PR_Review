@@ -49693,6 +49693,10 @@ class PullRequestClass {
     };
     createReviewComment = (requestOptions) => octokitTag.pipe(esm_Effect/* tap */.bwX(_ => core.info(`Creating review comment: ${JSON.stringify(requestOptions)}`)), esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReviewComment(requestOptions)), exponentialBackoffWithJitter(3))));
     createReview = (requestOptions) => octokitTag.pipe(esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.createReview(requestOptions)), exponentialBackoffWithJitter(3))));
+    getPullRequestCommitId = (owner, repo, pull_number) => {
+        const commitid = octokitTag.pipe(esm_Effect/* flatMap */.VSD(octokit => esm_Effect/* retry */.XDD(esm_Effect/* tryPromise */.p6W(() => octokit.rest.pulls.get({ owner, repo, pull_number })).pipe(esm_Effect/* map */.UID(response => response.data.head.sha)), exponentialBackoffWithJitter(3))));
+        return commitid;
+    };
 }
 const LanguageDetection = esm_Effect/* sync */.Z_X(() => {
     return {
@@ -49842,6 +49846,34 @@ const run = async () => {
                 })));
             }));
         })))));
+        return a;
+    }), 
+    // for manual review, given a PR number
+    // the commit id is derived from the PR number using getPullRequestCommitId
+    effect__WEBPACK_IMPORTED_MODULE_6__/* .when */ .gx('workflow_dispatch', () => {
+        const prNumber = parseInt(_actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('pr_number')); //Pr Number from API input
+        const excludeFilePatterns = (0,effect__WEBPACK_IMPORTED_MODULE_7__/* .pipe */ .zG)(effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => _actions_github__WEBPACK_IMPORTED_MODULE_2__.context.payload), effect__WEBPACK_IMPORTED_MODULE_8__/* .tap */ .bwX(pullRequestPayload => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => {
+            _actions_core__WEBPACK_IMPORTED_MODULE_1__.info(`repoName: ${repo}, pull_number: ${prNumber}, owner: ${owner}`);
+        })), effect__WEBPACK_IMPORTED_MODULE_8__/* .map */ .UID(() => _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput('exclude_files')
+            .split(',')
+            .map(_ => _.trim())));
+        const a = _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(PullRequest => PullRequest.getPullRequestCommitId(owner, repo, prNumber)), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(preqCommitId => excludeFilePatterns.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(filePatterns => _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(PullRequest => {
+            return PullRequest.getFilesForReview(owner, repo, prNumber, filePatterns);
+        }), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(files => {
+            return effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => files.filter(file => file.patch !== undefined));
+        }), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(files => effect__WEBPACK_IMPORTED_MODULE_8__/* .forEach */ .Ed_(files, file => {
+            return _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .CodeReview.pipe */ .OD.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(CodeReview => CodeReview.codeReviewFor(file)), effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(res => {
+                return _helpers_js__WEBPACK_IMPORTED_MODULE_4__/* .PullRequest.pipe */ .i7.pipe(effect__WEBPACK_IMPORTED_MODULE_8__/* .flatMap */ .VSD(PullRequest => PullRequest.createReviewComment({
+                    repo,
+                    owner,
+                    pull_number: prNumber,
+                    commit_id: preqCommitId,
+                    path: file.filename,
+                    body: res.text,
+                    subject_type: 'file'
+                })));
+            }));
+        })))))));
         return a;
     }), effect__WEBPACK_IMPORTED_MODULE_6__/* .orElse */ .vx(eventName => effect__WEBPACK_IMPORTED_MODULE_8__/* .sync */ .Z_X(() => {
         _actions_core__WEBPACK_IMPORTED_MODULE_1__.setFailed(`Unsupported event. Got: ${eventName}`); // Debug statement
